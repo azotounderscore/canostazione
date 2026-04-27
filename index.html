@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>CentralCano</title>
+      <style>
+            * {
+                  box-sizing: border-box;
+                  margin: 0;
+                  padding: 0;
+            }
+            body {
+                  background: linear-gradient(0deg, #aaa, #fff);
+                  min-height: 100vh;
+                  font-family: 'Kanit', sans-serif;
+            }
+            header > div {
+                  display: flex;
+                  flex-flow: row nowrap;
+                  justify-content: center;
+                  align-items: center;
+                  height: 500px;
+            }
+            header {
+                  width: 100%;
+                  position: sticky;
+                  top: 0;
+                  z-index: -1;
+                  text-shadow: 0px 0px 10px rgba(0, 0, 0, 0.4);
+            }
+            header > div h1 {
+                  text-align: center;
+                  font-size: 130px;
+                  margin: 0;
+                  padding: 0;
+            }
+            header > div img {
+                  position: absolute;
+                  display: block;
+                  height: 130px;
+                  width: 130px;
+                  transform: translateX(325px);
+                  animation: spin 5s linear infinite;
+            }
+            @keyframes spin {
+                  from {transform: translateX(325px) rotate(0deg);}
+                  to {transform: translateX(325px) rotate(360deg);}
+            }
+            header > div p {
+                  margin: 80px 0 0 140px;
+                  font-size: 50px;
+            }
+            main {
+                  display: flex;
+                  flex-flow: row wrap;
+                  justify-content: center;
+                  gap: 35px;
+            }
+            .app {
+                  background-position: center;
+                  background-size: cover;
+                  box-shadow: 0 0 10px 5px rgba(0, 0, 0, 0.2);
+                  border-radius: 15px;
+                  transition: all 0.2s ease-out;
+            }
+            .app a {
+                  width: 350px;
+                  height: 200px;
+                  font-size: 20px;
+                  border-radius: 15px;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  background-color: rgba(0, 0, 0, 0.4);
+                  overflow: hidden;
+                  color: white;
+                  text-shadow: 0px 0px 10px #000000, 0px 0px 10px #000000, 0px 0px 10px #000000, 0px 0px 10px #000000, 0px 0px 10px #000000;
+                  text-decoration: none;
+            }
+            .app:hover {
+                  transform: translateY(-10px);
+            }
+            footer {
+                  width: 100%;                  
+                  text-align: center;
+                  padding: 20px
+            }
+
+            /* ============================================ */
+            /* RESPONSIVE */
+            /* ============================================ */
+            @media only screen and (max-width: 950px) {
+                  header > div {
+                  display: flex;
+                  flex-flow: row nowrap;
+                  justify-content: center;
+                  align-items: center;
+                  height: 300px;
+            }
+            header > div h1 {
+                  text-align: center;
+                  font-size: 80px;
+                  margin: 0;
+                  padding: 0;
+            }
+            header > div img {
+                  position: absolute;
+                  display: block;
+                  height: 80px;
+                  width: 80px;
+                  transform: translateX(200px);
+                  animation: spin 5s linear infinite;
+            }
+            @keyframes spin {
+                  from {transform: translateX(200px) rotate(0deg);}
+                  to {transform: translateX(200px) rotate(360deg);}
+            }
+            header > div p {
+                  margin: 80px 0 0 90px;
+                  font-size: 25px;
+            }
+            }
+            @media only screen and (max-width: 570px) {
+                  header > div {
+                  display: flex;
+                  flex-flow: row nowrap;
+                  justify-content: center;
+                  align-items: center;
+                  height: 300px;
+            }
+            header > div h1 {
+                  text-align: center;
+                  font-size: 40px;
+                  margin: 0;
+                  padding: 0;
+            }
+            header > div img {
+                  position: absolute;
+                  display: block;
+                  height: 40px;
+                  width: 40px;
+                  transform: translateX(90px);
+                  animation: spin 5s linear infinite;
+            }
+            @keyframes spin {
+                  from {transform: translateX(90px) rotate(0deg);}
+                  to {transform: translateX(90px) rotate(360deg);}
+            }
+            header > div p {
+                  margin: 40px 0 0 40px;
+                  font-size: 25px;
+            }
+            .app a {
+                  width: 200px;
+                  height: 200px;
+                  font-size: 20px;
+                  border-radius: 15px;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  background-color: rgba(0, 0, 0, 0.4);
+                  overflow: hidden;
+                  color: white;
+                  text-shadow: 0px 0px 10px #000000, 0px 0px 10px #000000, 0px 0px 10px #000000, 0px 0px 10px #000000, 0px 0px 10px #000000;
+                  text-decoration: none;
+            }
+            }
+      </style>
+</head>
+<body>
+
+      <header>
+
+            <div class="title-container">
+                  <h1>Central</h1><h1>Can</h1><img src="fed.png"><p>2.0</p>
+            </div>
+
+      </header>
+
+      <main>
+
+      </main>
+
+      <footer>©2025ilCano</footer>
+
+<script src="script.js"></script>
+</body>
+
+</html>

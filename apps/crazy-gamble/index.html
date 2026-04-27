@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>gambling</title>
+
+
+      <style>
+
+            @font-face {
+                  font-family: Lounge;
+                  src: url(media/fonts/LoungeBait-JpVa.ttf);
+            }
+
+
+            body {
+                  background-color: gray;
+                  box-shadow: inset 0 0 100px 50px rgba(0, 0, 0, 0.5);
+                  color: white;
+                  margin: 0;
+                  min-height: 100vh;
+                  overflow: hidden;
+
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                  font-family: Lounge;
+
+                  -webkit-user-select: none; /* Safari */
+                  -ms-user-select: none; /* IE 10 and IE 11 */
+                  user-select: none; /* Standard syntax */
+
+            }
+            #gameInfo {
+                  font-size: 5rem;
+            }
+            #gameInfo p {
+                  margin: 0;
+            }
+            #gameInfo span {
+                  color: gold;
+            }
+            #container {
+                  border: 10px solid gold;
+                  background-image: linear-gradient(red, darkred);
+
+                  width: 90%;
+                  max-width: 500px;
+                  height: 300px;
+                  max-height: 300px;
+                  border-radius: 40px;
+
+                  display: flex;
+                  flex-flow: row nowrap;
+                  justify-content: space-around;
+                  align-items: center;
+                  box-shadow: 0 0 10px 5px rgba(255, 217, 0, 0.3);
+            }
+            .colonna {
+                  border: 5px solid black;
+                  background-color: white;
+                  color: black;
+                  font-size: 4rem;
+                  font-weight: bold;
+                  box-shadow: inset 0 0 10px 5px rgba(0, 0, 0, 0.5);
+                  
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+
+                  width: 25%;
+                  height: 60%;
+                  border-radius: 15px;
+
+                  text-shadow: 0 0 20px black, 0 0 30px black, 0 0 40px black, 0 0 50px black, 0 0 60px black, 0 0 70px black, 0 0 80px black;
+
+                  z-index: 10;
+            }
+
+            #playButton {
+                  background-image: linear-gradient(gold, darkgoldenrod);
+                  border: none;
+                  box-shadow: 0 12px 0 2px rgb(122, 89, 8);
+                  cursor: pointer;
+                  font-family: Lounge;
+                  font-size: 5em;
+                  color: white;
+                  text-shadow: 0 0 10px yellow;
+
+                  width: 150px;
+                  height: 150px;
+                  border-radius: 50%;
+                  margin: 30px;
+                  transition: all 0.05s ease-out;
+            }
+            #playButton:hover {
+                  transform: translateY(3px);
+                  box-shadow: 0 9px 0 2px rgb(122, 89, 8);
+            }
+            #playButton:active {
+                  transform: translateY(9px);
+                  box-shadow: 0 1px 0 2px rgb(122, 89, 8);
+            }
+            #playButton:disabled {
+                  opacity: 0.5;
+            }
+
+            #winBox {
+                  position: absolute;
+                  z-index: 1000;
+
+                  width: 100%;
+                  height: 100%;
+                  background-color: rgba(0, 0, 0, 0.5);
+                  box-shadow: 0 0 0 10000px rgba(0, 0, 0, 0.5);
+
+                  
+
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                  display: none;
+
+                  animation: pulsa 1s linear infinite;
+
+            }
+            #winBox p {
+                  margin: 0;
+                  text-shadow: 0 0 20px black, 0 0 30px black, 0 0 40px black, 0 0 50px black, 0 0 60px black, 0 0 70px black, 0 0 80px black;
+                  font-size: 300px;
+                  line-height: 250px;
+            }
+
+            @keyframes pulsa {
+                  0% {transform: scale(1);}
+                  50% {transform: scale(1.2);}
+                  100% {transform: scale(1);}
+            }
+
+
+      </style>
+
+</head>
+<body>
+
+
+      <audio id="jackpotAudio" src="media/jackpotWin.mp3"></audio>
+      <audio id="basicAudio" src="media/basicWin.mp3"></audio>
+      <audio id="clickAudio" src="media/click.mp3"></audio>
+
+      <div id="winBox">
+            <p>+ <span id="winDisplay"></span></p>
+            <p><span id="winDisplayText"></span></p>
+      </div>
+
+
+      <div id="gameInfo">
+            <p>Credito: <span id="displaySoldi">100</span></p>
+      </div>
+
+      <div id="container">
+
+            <div id="colonnaX" class="colonna"><span id="displayX"></span></div>
+            <div id="colonnaY" class="colonna"><span id="displayY"></span></div>
+            <div id="colonnaZ" class="colonna"><span id="displayZ"></span></div>
+
+      </div>
+
+      <button id="playButton">GIOCA</button>
+
+      
+      <script src="script.js"></script>
+      <script src='../../homePageButton.js'></script>
+      <script src='https://kit.fontawesome.com/55c134a797.js' crossorigin='anonymous'></script>
+      
+</body>
+</html>

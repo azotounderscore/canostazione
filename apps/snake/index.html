@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake</title>
+</head>
+<body style="font-family: Arial; margin:0;background: lightblue; display: flex; justify-content: center; align-items: center;flex-direction: column; gap: 5px; min-height: 100vh;">
+
+    <canvas style="border: 10px solid gray; background: green;"></canvas>
+    <div id="display"></div>
+    <form id="controlli" style="display: flex;flex-flow: column nowrap;gap: 5px;">
+        <input name="larghezza" id="larghezza" placeholder="Larghezza Tabella" type="number">
+        <input name="altezza" id="altezza" placeholder="Altezza Tabella" type="number">
+        <input name="velocità" id="velocità" placeholder="Velocità 1-10" type="number">
+        <button type="submit" value="Submit">Salva</button>
+    </form>
+
+<script>
+const canvas = document.querySelector('canvas')
+
+// ctx è il "pennello" con cui disegni
+const ctx = canvas.getContext('2d')
+
+
+let gridSize = 20;        // grandezza caselle
+let canvasWidth;
+let canvasHeight;
+let velocità;
+
+// form
+
+
+document.getElementById('controlli').addEventListener('submit', function(event) {
+    event.preventDefault()
+
+    const larghezza = parseInt(document.getElementById('larghezza').value) || 10
+    const altezza = parseInt(document.getElementById('altezza').value) || 10
+    const vel = parseInt(document.getElementById('velocità').value) || 3
+
+    canvasWidth = larghezza
+    canvasHeight = altezza
+    velocità = vel
+
+    canvas.width = canvasWidth*gridSize;
+    canvas.height = canvasHeight*gridSize;
+
+    init()
+})
+
+
+
+
+
+
+
+// array del serpente
+const snake = [
+    {x: 5, y:5},
+    {x: 4, y:5},
+    {x: 3, y:5}
+]
+
+
+// funzione per disegnare il serpente nelle corrette caselle
+function drawSnake() {
+    ctx.fillStyle = 'greenyellow'     // scegli il colore
+    for (let i = 0; i < snake.length; i++) {
+        ctx.fillRect(snake[i].x*gridSize, snake[i].y*gridSize, gridSize, gridSize)
+    }
+}
+
+
+
+// occchio spazzatura vera qua
+// mo tocca il movimento del serpente
+
+var direction = "destra"
+
+function moveSnake() {
+
+    var testaCorrente = snake[0]
+    var nuovaTesta
+
+    switch(direction) {
+        case "destra":
+            nuovaTesta = {x: testaCorrente.x + 1, y: testaCorrente.y}
+            break
+        case "sinistra":
+            nuovaTesta = {x: testaCorrente.x - 1, y: testaCorrente.y}
+            break
+            case "su":
+            nuovaTesta = {x: testaCorrente.x, y: testaCorrente.y - 1}
+            break
+        case "giu":
+            nuovaTesta = {x: testaCorrente.x, y: testaCorrente.y + 1}
+            break
+    }
+    
+    snake.unshift(nuovaTesta)
+    if (!checkMela()) {
+        snake.pop()
+    }
+    
+    console.log("nuova testa: " + nuovaTesta.x, nuovaTesta.y);
+}
+
+
+// merdaccia varia per la mela
+
+var mela = {x:1, y:1}
+function spawnMela() {
+    
+    // controllo
+    var posValida = false;
+    
+    while(!posValida) {
+        
+        mela.x = Math.floor(Math.random() * canvasWidth)
+        mela.y = Math.floor(Math.random() * canvasHeight)
+
+        posValida = true
+
+        for (let i = 0; i < snake.length; i++) {
+            if (snake[i].x === mela.x && snake[i].y === mela.y) {
+                posValida = false;
+                break
+            }
+        }
+    }
+
+    console.log("mela.x = " + mela.x, "mela.y = " + mela.y);
+}
+function drawMela() {
+    ctx.fillStyle = 'red'
+    ctx.fillRect(mela.x*gridSize, mela.y*gridSize, gridSize, gridSize)
+}
+function checkMela() {
+    if (mela.x === snake[0].x && mela.y === snake[0].y) {
+        punto(1)
+        spawnMela()
+        return true
+    }
+    return false
+}
+var punti = 0
+function punto(x) {
+    punti += x
+    document.getElementById('display').innerText = "Punti: " + punti;
+}
+
+
+// collisioni
+
+function checkCollisioni() {
+    const testa = snake[0]
+    // bordi
+        if (testa.x < 0 || testa.y < 0 || testa.x > canvasWidth - 1 || testa.y > canvasHeight - 1) {
+            return true
+        }
+    // corpo
+    for (let i = 1; i < snake.length; i++) {
+        if (testa.x === snake[i].x && testa.y === snake[i].y) {
+            return true
+        }
+    }
+    return false
+}
+
+
+// loop di gioco
+
+var ultimaDirezione;
+function gameLoop() {
+    ctx.clearRect(0, 0, canvasWidth*gridSize, canvasHeight*gridSize)      // puliamo
+    checkWin()
+    moveSnake()
+    if (checkCollisioni()) {
+        alert("Hai perso! PUNTI: " + punti)
+        location.reload()
+    }
+    drawMela()
+    ultimaDirezione = direction
+    drawSnake()
+}
+// loop vero
+function init() {
+    spawnMela()     // mela iniziale
+    punto(0)        // mostra il display
+    setInterval(gameLoop, velocità*100);
+}
+function checkWin() {
+    if (punti === (canvasHeight*canvasWidth) - 4) {
+        alert("HAI VINTO! PUNTI: " + punti)
+        location.reload()
+    }
+}
+//controlli
+
+document.addEventListener('keydown', function(event) {
+
+    // event.key dice qual'è il tasto premuto
+
+    switch (event.key) {
+        case "ArrowRight":
+        case "d":
+            if (ultimaDirezione !== "sinistra") direction = "destra"
+            break
+        case "ArrowLeft":
+        case "a":
+            if (ultimaDirezione !== "destra") direction = "sinistra"
+            break
+        case "ArrowUp":
+        case "w":
+            if (ultimaDirezione !== "giu") direction = "su"
+            break
+        case "ArrowDown":
+        case "s":
+            if (ultimaDirezione !== "su") direction = "giu"
+            break
+    }
+
+    console.log("direzione = " + direction);
+})
+</script>
+</body>
+</html>

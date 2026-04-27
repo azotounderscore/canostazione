@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Nether Portal Calculator</title>
+
+
+
+
+      <style>
+
+            @font-face {
+                  font-family: 'MC';
+                  src: url(Minecraft.ttf);
+            }
+
+            * {
+                  font-family: MC;
+                  font-size: 20px;
+                  transition: all 0.1s ease-out;
+            }
+
+            body {
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: space-between;
+                  align-items: center;
+
+                  background-color: #5f5f5f;
+                  color: white;
+            }
+            input {
+                  padding: 5px;
+                  width: 30%;
+                  border-radius: 7px;
+                  border: none;
+                  max-width: 200px;
+                  min-width: 100px;
+                  text-align: center;
+                  background-color: #f5f5f5;
+                  border: 3px solid #ccc;
+                  box-shadow: 0 10px 0 0 #ccc;
+            }
+            input:focus {
+                  outline: none;
+                  border: 3px solid orangered;
+                  box-shadow: 0 10px 0 0 orangered;
+            }
+            #inputs {
+                  width: 400px;
+
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+            }
+            #inputs div {
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  width: 100%;
+                  gap: 20px 60px;
+            }
+            button {
+                  width: 123px;
+                  height: 50px;
+                  margin: 20px 0 3px;
+                  background-color: orangered;
+                  border-radius: 10px;
+                  border: none;
+                  box-shadow: 0 6px 0 0 rgb(163, 44, 0);
+                  color: white;
+                  cursor: pointer;
+            }
+            button:active {
+                  box-shadow: 0 3px 0 0 rgb(163, 44, 0);
+                  transform: translateY(3px);
+            }
+            p {
+                  text-align: center;
+                  color: black;
+                  background-color: #f5f5f5;
+                  border: 2px solid #ccc;
+                  box-shadow: 0 10px 0 0 #ccc;
+                  padding: 10px;
+                  border-radius: 10px;
+            }
+            span {
+                  color: orangered;
+                  font-weight: bold;
+            }
+
+
+
+
+      </style>
+
+
+</head>
+<body>
+
+      <div id="inputs">
+            <div>
+                  <label for="x">Coordinate X</label>
+                  <label for="z">Coordinate Z</label>
+            </div>
+            <div>
+                  <input type="number" id="x" required>
+                  <input type="number" id="z" required>
+            </div>
+      </div>
+
+      <button onclick="calculate()">Calculate</button>
+
+      <p>Coordinate nel nether: <br><br>
+            X = <span id="resultX"></span><br>
+            Z = <span id="resultZ"></span></p>
+
+
+
+
+
+
+
+      <script>
+
+
+
+
+
+            function calculate() {
+
+                  const x = parseInt(document.getElementById('x').value);
+                  const z = parseInt(document.getElementById('z').value);
+
+                  const resultX = Math.floor(x / 8);
+                  const resultZ = Math.floor(z / 8);
+
+                  document.getElementById('resultX').textContent = resultX;
+                  document.getElementById('resultZ').textContent = resultZ;
+            }
+
+
+
+
+
+      </script>
+      
+<script src='../../homePageButton.js'></script>
+<script src='https://kit.fontawesome.com/55c134a797.js' crossorigin='anonymous'></script>
+
+
+
+
+
+
+</body>
+</html>

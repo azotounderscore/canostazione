@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" href="style.css">
+      <title>Campo Minato</title>
+</head>
+<body>
+
+      <main>
+
+            <div class="container"><div class="container-grid"></div></div>
+
+            <div class="controlli">
+                  <p>Credito: <span id="creditoDisplay"></span></p>
+                  <p>Puntata:</p>
+                  <input id="puntataInput" type="number" min="100" step="100" value="100">
+                  <p>Numero Bombe:</p>
+                  <input id="bombeInput" type="number" min="1" step="1" value="3">
+                  <button id="punta">PUNTA</button>
+                  <button id="cashout">CASHOUT</button>
+                  <p>Vincita: <span id="vincitaDisplay"></span></p>
+            </div>
+
+      </main>
+
+      <audio id="bell">
+            <source src="bell.mp3">
+            Your browser does not support the audio element.
+      </audio>
+      <audio id="boom">
+            <source src="boom.mp3">
+            Your browser does not support the audio element.
+      </audio>
+
+<script src="script.js"></script>
+<script src='../../homePageButton.js'></script>
+<script src='https://kit.fontawesome.com/55c134a797.js' crossorigin='anonymous'></script>
+</body>
+</html>

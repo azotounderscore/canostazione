@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banchi - Centralcano</title>
+    <style>
+        span {
+            display: block;
+            width: 30%; height: 50px;
+            background: burlywood;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            font-size: 2em; text-align: center; line-height: 50px; font-family: Arial;
+        }
+        #container > div {
+            display: flex;
+            justify-content: space-around;
+        }
+        #container > div > div {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body style="background: lightblue;display: flex;min-height: 100vh;margin: 0;align-items: center;justify-content: center;flex-flow: column;gap: 20px;">
+    <div id="container" style="width: 90%;background: lightgray; min-height: 100px;box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);border-radius: 5px;display: flex;flex-flow: column;gap: 10px;padding: 20px 0;">
+        <div>
+            <div><span></span><span></span></div>
+            <div><span></span><span></span></div>
+            <div><span></span><span></span></div>
+        </div>
+        <div>
+            <div><span></span><span></span></div>
+            <div><span></span><span></span></div>
+            <div><span></span><span></span></div>
+        </div>
+        <div>
+            <div><span></span><span></span></div>
+            <div><span></span><span></span><span></span></div>
+            <div><span></span><span></span></div>
+        </div>
+    </div>
+    <button style="font-size: 26px;padding: 8px;aspect-ratio: 1/1;border-radius: 10px;border: 0.1em solid rgb(182, 98, 98);border-bottom: 0.2em solid rgb(182, 98, 98);background: lightcoral;cursor: pointer;">🔁</button>
+    <a href="banchi v3f.html" style="position: fixed;top: 0;right: 0;background:transparent;border: 1px solid black;opacity: 0.1;padding: 2px;cursor: pointer;">x</a>
+<script>
+    const banchi = document.querySelectorAll('span')
+    const nStud = banchi.length
+    const elenco = Array.from({ length: nStud }, (_, i) => i + 1)
+    const truccato = false
+
+    document.querySelector('button').addEventListener('click', () => {
+        const nuovoElenco = shuffleArray([...elenco])
+        if (truccato) trucca(nuovoElenco)
+        console.log("Nuovi posti: "+nuovoElenco);
+        banchi.forEach((banco, i) => {
+            banco.innerHTML = nuovoElenco[i]
+        });
+    })
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i >= 1; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array
+    }
+
+
+
+    //x falsificare
+
+    function trucca(nuovoElenco) {
+        const chiNonDeveStareInPrimaFila = 4 // numero di elenco (ale = 4)
+        console.log(nuovoElenco.indexOf(chiNonDeveStareInPrimaFila));
+        while (nuovoElenco.indexOf(chiNonDeveStareInPrimaFila) < 6) {
+            const falso = shuffleArray([...elenco])
+            nuovoElenco.splice(0, nuovoElenco.length, ...falso)
+            console.log(nuovoElenco.indexOf(chiNonDeveStareInPrimaFila));
+        }
+    }
+
+</script>
+</body>
+</html>

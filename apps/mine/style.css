@@ -1,0 +1,196 @@
+* {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+}
+body {
+      background-color: #222;
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 20px 0;
+      color: white;
+      gap: 20px;
+      user-select: none;
+      overflow-x: hidden;
+      font-size: 16px;
+}
+
+/* ######################### */
+/* main                      */
+/* ######################### */
+
+main {
+      margin: 0 auto;
+      width: 90%;
+      height: 100%;
+      max-width: 1000px;
+      background-color: #333;
+      display: flex;
+      flex-flow: row nowrap;
+}
+
+/* ######################### */
+/* container                 */
+/* ######################### */
+
+.container {
+      width: 70%;
+      aspect-ratio: 1/1;
+      padding: 20px;
+}
+.container-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+      gap: 1%;
+}
+
+/* ######################### */
+/* controlli                 */
+/* ######################### */
+
+.controlli {
+      width: 30%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      color: white;
+}
+.controlli button {
+      width: 49%;
+      padding: 10px;
+      font-size: 1.1rem;
+      background-color: limegreen;
+      border: 1px solid green;
+      color: white;
+      border-radius: 5px;
+}
+.controlli button:hover {
+      background-color: lime;
+}
+.controlli button:disabled {
+      background-color: green;
+      border: 1px solid rgb(0, 95, 0);
+      color: #ccc;
+}
+.controlli input {
+      width: 49%;
+      padding: 10px;
+      font-size: 1.1rem;
+      border-radius: 5px;
+      border: 1px solid #555;
+      text-align: center;
+      background-color: #222;
+      color: white;
+}
+
+
+
+
+/* ######################### */
+/* caselle                   */
+/* ######################### */
+
+.casella {
+      width: 100%;
+      aspect-ratio: 1/1;
+      background-color: #444;
+      border-radius: 10px;
+      transition: transform 0.2s;
+      cursor: not-allowed;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 10vmin;
+      text-shadow: 0 0 5px black;
+      box-shadow: 0 0 5px #000000;
+}
+.attiva {
+      transition: all 0.2s;
+      box-shadow: 0 0 5px #00000097;
+}
+.attiva:hover {
+      transform: rotate(5deg);
+      cursor: pointer;
+}
+.libera {
+      background-color: limegreen;
+}
+.liberaAnimazione {
+      animation: libera 0.5s ease;
+}
+.bomba {
+      background-color: red;
+      animation: esplosione 1s;
+}
+
+
+/* ######################### */
+/* button                    */
+/* ######################### */
+
+button {
+      cursor: pointer;
+      text-align: center;
+      overflow: hidden;
+}
+button:disabled {
+      cursor: not-allowed;
+}
+
+#vincitaDisplay, #creditoDisplay {
+      font-weight: bold;
+      color: yellow;
+      text-shadow: 0 0 5px black;
+      font-size: 1.2rem;
+}
+
+/* ========================== */
+/* animazioni                 */
+/* ========================== */
+
+@keyframes esplosione {
+      0% { transform: scale(1) rotate(0deg)}
+      50% { transform: scale(1.5)}
+      100% { transform: scale(1) rotate(360deg)}
+}
+@keyframes libera {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+}
+
+
+/* ######################### */
+/* responsive                */
+/* ######################### */
+@media (max-width: 470px) {
+      main {
+            flex-direction: column;
+            height: auto;
+      }
+      .container {
+            width: 100%;
+            aspect-ratio: 1/1;
+      }
+      .controlli {
+            width: 100%;
+            flex-direction: column;
+            flex-wrap: wrap;
+            justify-content: center;
+      }
+      
+}
+
+
+
+
+
+.controlli button, .controlli input {
+            width: 80%;
+      }

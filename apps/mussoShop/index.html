@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MussoShop</title>
+    <style>
+
+        * {margin: 0;padding: 0;box-sizing: border-box;}
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: url(mussoBg.jpg);
+            background-position: center;
+            background-size: cover;
+            min-height: 100vh;
+        }
+        main {
+            max-width: 1000px;
+            padding: 10px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin: 40px 20px;
+            font-size: 50px;
+            color: white;
+        }
+        .list {
+            display: flex;
+            flex-flow: column;
+            gap: 10px;
+        }
+        .app {
+            padding: 10px 20px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            display: flex;
+            flex-flow: row wrap;
+            align-items: center;
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.4);
+        }
+        .app img {
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px;
+        }
+        .app span {
+            font-size: 24px;
+        }
+        .app a {
+            text-decoration: none;
+            color: white;
+            padding: 10px 10px;
+            border: 1px solid rgba(0, 128, 0, 0.505);
+            background-color: limegreen;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 3px green;
+        }
+        .app a:active {
+            transform: scale(0.97);
+        }
+
+    </style>
+</head>
+<body>
+
+    <main>
+
+        <h1>Shop di Musso</h1>
+
+        <div class="list"></div>
+
+    </main>
+<script>
+
+    const apps = [
+        app1 = {
+            nome: "Flappy Ale",
+            file: "https://drive.google.com/uc?export=download&id=1dKMPm9Rreewvpp-4Ivq6r1dX2yuYSRVX",
+            cover: "FlappyAlessà.png"
+        },
+    ]
+
+    for (let i = 0; i < apps.length; i++) {
+
+        const app = document.createElement('div')
+        app.classList.add("app")
+
+        const cover = document.createElement('img')
+        cover.src = "files/" + apps[i].cover;
+
+        const nomeApp = document.createElement('span')
+        nomeApp.textContent = apps[i].nome
+
+        const dwBtn = document.createElement('a');
+        dwBtn.textContent ="Scarica";
+        dwBtn.href = apps[i].file;
+        dwBtn.download = apps[i].file;
+
+        app.appendChild(cover)
+        app.appendChild(nomeApp)
+        app.appendChild(dwBtn)
+
+
+        document.querySelector('.list').appendChild(app)
+    }
+
+</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+}
+p {
+      font-size: 5rem;
+      margin: 0;
+}
+
+#container {
+
+      margin-top: 20px;
+
+      width: 500px;
+      height: 500px;
+      padding: 20px;
+
+      background-color: black;
+
+      display: flex;
+      flex-flow: row wrap;
+      justify-content: space-around;
+      align-items: center;
+
+}
+
+#container div {
+
+      width: 30%;
+      height: 30%;
+      background-color: white;
+      margin: 1px;
+
+}
+.attivo {
+      background-color: green !important;
+}
+.bomba {
+      background-color: red !important;
+}
+
+
+
+
+
+
+@media screen and (max-width: 500px) {
+  
+      #container {
+            width: 100vw;
+            padding: 0;
+      }
+      p {
+            font-size: 2rem;
+      }
+
+}

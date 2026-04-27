@@ -1,0 +1,147 @@
+      <!DOCTYPE html>
+      <html lang="it">
+      <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link rel="stylesheet" href="/Users/acres/OneDrive/Documenti/CODICI/CanoCentrale/CCHomePage/CC-home-page.css">
+            <title>Indovina il numero</title>
+
+            <style>
+                  
+                  body {
+                        margin: 0;
+                        background-color: gray;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        overflow: hidden;
+                  }
+                  img {
+                        display: none;
+                  }
+                  #agg {
+                        position: absolute;
+                        animation: pulsa 2s ease-in-out infinite;
+                  }
+                  #raga {
+                        position: absolute;
+                        width: 200px;
+                        right: 40px;
+                        top: 20px;
+                  }
+                  #noway {
+                        height: 300px;
+                        position: absolute;
+                        left: 20px;
+                  }
+                  #container {
+                        background-color: lightgray;
+                        width: 300px;
+                        height: 200px;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                  }
+                  input {
+                        width: 50px;
+                        height: 30px;
+                  }
+                  button {
+                        width: 50px;
+                        height: 36px;
+                  }
+                  #playAgain {
+                        display: none;
+                        margin-top: 10px;
+                        width: fit-content;
+                        z-index: 1000;
+                  }
+                  h1 {
+                        margin: 0;
+                        text-align: center;
+                  }
+                  #hint {
+                        color: red;
+                  }
+                  #container p {z-index: 1000;}
+                  @keyframes pulsa {
+                        0% {transform: scale(1)}
+                        50% {transform: scale(1.5)}
+                        100% {transform: scale(1.0)}
+                  }
+            </style>
+      </head>
+
+      <body>
+
+            <div id="container">
+                  <h1>Indovina il numero tra 1 e 50</h1>
+                  <p><span id="hint"></span></p>
+
+                  <div id="guess"></div>
+                        <div><input type="number" id="input" min="1" max="50" placeholder="inserisci...">
+                        <button id="submit" onclick="checkGuess()">Invia</button>
+                  </div>
+
+                  <button id="playAgain" onclick="window.location.reload()">GIOCA DI NUOVO</button>
+                  
+                  <img id="agg" src="media/agg.jpg">
+                  <img id="raga" src="media/raga.png" alt="raga">
+                  <img id="noway" src="media/noway.png" alt="noway">
+
+                  <audio id="winAudio">
+                        <source src="media/win.mp3">
+                  </audio>
+            </div>
+            
+            <script>
+                  // Genera un numero random tra 1 e 50
+                  const randomNumber = Math.floor(Math.random() * 50) + 1;
+                  console.log(randomNumber); // Per debug
+
+                  const hint = document.getElementById('hint');
+                  const submit = document.getElementById('submit');
+                  const input = document.getElementById('input');
+                  const images = document.querySelectorAll('img');
+                  const playAgainButton = document.getElementById('playAgain');
+                  const winAudio = document.getElementById('winAudio');
+
+                  function checkGuess() {
+                        const guess = parseInt(input.value);
+                        input.value = ''; // Pulisci il campo di input
+
+                        if (guess === randomNumber) {
+                              hint.textContent = 'Hai indovinato!';
+                              hint.style.color = 'green';
+                              hint.style.fontSize = '200px';
+                              
+                              // Mostra tutte le immagini
+                              images.forEach(img => {
+                                    img.style.display = 'block';
+                              });
+                              
+                              submit.disabled = true;
+                              playAgainButton.style.display = 'block';
+                              playAgainButton.style.position = 'absolute';
+                              winAudio.play();
+
+                        } else if (guess < randomNumber) {
+                              hint.textContent = 'MAGGIORE';
+                        } else if (guess > randomNumber) {
+                              hint.textContent = 'MINORE';
+                        }
+                  }
+
+                  // Aggiungi un event listener per intercettare il tasto "Enter"
+                  input.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter') {
+                              checkGuess();
+                        }
+                  });
+            </script>
+            <script src='../../homePageButton.js'></script>
+            <script src='https://kit.fontawesome.com/55c134a797.js' crossorigin='anonymous'></script>
+      </body>
+      </html>

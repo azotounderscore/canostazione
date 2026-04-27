@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Live chat</title>
+    <link rel="stylesheet" href="claude-styles.css" type="text/css" media="all" />
+  </head>
+  <body>
+
+    <div class="container">
+      
+      <div style="display:flex;flex-flow:row nowrap;align-items:center">
+        <p style="white-space:nowrap;">Il tuo nome:</p>
+        <input type="text" id="name-input" value="Anonimo">
+      </div>
+
+      <div id="chat-container">
+        <!-- Esempio messaggio
+        <div class="message">
+          <p>nome_utente</p>
+          <p>testo del messaggio</p>
+        </div>
+        -->
+      </div>
+      
+      <div>
+        <input type="text" id="message-input">
+        <button id="send-btn">INVIA</button>
+      </div>
+      
+    </div>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="script.js"></script>
+      
+  </body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>test cursors</title>
+
+
+      <style>
+
+            * {
+                  font-family: sans-serif;
+            }
+
+            body {
+                  background: url(https://c4.wallpaperflare.com/wallpaper/765/406/516/landscape-4k-bliss-windows-xp-wallpaper-thumb.jpg);
+                  background-size: cover;
+                  background-attachment: fixed;
+            }
+            #container > div {
+                  background: rgba(255, 255, 255, 0.5);
+                  margin: 10px;
+                  padding: 10px;
+                  width: 100px;
+                  border: 1px solid rgba(255,255,255,0.5);
+            }
+            #container > div:hover {
+                  border: 1px solid rgba(0,0,0,0.5);
+            }
+            #container {
+                  display: flex;
+                  flex-flow: row wrap;
+                  justify-content: center;
+            }
+            h1 {
+                  text-align: center;
+            }
+
+
+      </style>
+</head>
+<body>
+
+
+      <h1>Test out your cursors</h1>
+
+      <div id="container">
+
+      </div>
+
+
+
+      <script>
+
+
+            let cursorTypes = [
+                  { cursor: "alias" },
+                  { cursor: "all-scroll" },
+                  { cursor: "auto" },
+                  { cursor: "cell" },
+                  { cursor: "col-resize" },
+                  { cursor: "context-menu" },
+                  { cursor: "copy" },
+                  { cursor: "crosshair" },
+                  { cursor: "default" },
+                  { cursor: "e-resize" },
+                  { cursor: "ew-resize" },
+                  { cursor: "-webkit-grab", cursor: "grab" },
+                  { cursor: "-webkit-grabbing", cursor: "grabbing" },
+                  { cursor: "help" },
+                  { cursor: "move" },
+                  { cursor: "n-resize" },
+                  { cursor: "ne-resize" },
+                  { cursor: "nesw-resize" },
+                  { cursor: "ns-resize" },
+                  { cursor: "nw-resize" },
+                  { cursor: "nwse-resize" },
+                  { cursor: "no-drop" },
+                  { cursor: "none" },
+                  { cursor: "not-allowed" },
+                  { cursor: "pointer" },
+                  { cursor: "progress" },
+                  { cursor: "row-resize" },
+                  { cursor: "s-resize" },
+                  { cursor: "se-resize" },
+                  { cursor: "sw-resize" },
+                  { cursor: "text" },
+                  { cursor: "w-resize" },
+                  { cursor: "wait" },
+                  { cursor: "zoom-in" },
+                  { cursor: "zoom-out" },
+            ];
+
+            let container = document.getElementById("container");
+
+            cursorTypes.forEach((type) => {
+                  let div = document.createElement("div");
+                  div.style.cursor = type.cursor;
+                  div.innerHTML = type.cursor;
+                  container.appendChild(div);
+            });
+
+
+
+      </script>
+      <script src='../../homePageButton.js'></script>
+      <script src='https://kit.fontawesome.com/55c134a797.js' crossorigin='anonymous'></script>
+</body>
+</html>
