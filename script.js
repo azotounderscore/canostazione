@@ -18,6 +18,14 @@ const apps = [
             display: "Campo Minato",
             id: "mine",
       },
+      {
+            display: "Calendario",
+            id: "calendario",
+      },
+      {
+            display: "canoChat",
+            id: "live-chat",
+      },
       tris = {
             display: "Tris",
             id: "tris",

@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Calendario Amici</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --border: #e2e0da;
+      --text: #1a1915;
+      --muted: #8a8880;
+      --accent: #2d6a4f;
+      --accent-light: #d8f3dc;
+      --danger: #c1121f;
+      --danger-light: #ffe5e7;
+      --radius: 10px;
+      --shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+    #user-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    #user-pill .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* ── SETUP SCREEN ── */
+    #setup-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      padding: 24px;
+    }
+    #setup-screen h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    #setup-screen p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+    #setup-screen input {
+      width: 100%;
+      max-width: 300px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 15px;
+      background: var(--surface);
+      margin-bottom: 12px;
+      outline: none;
+    }
+    #setup-screen input:focus { border-color: var(--accent); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: var(--radius);
+      border: none;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:active { opacity: 0.75; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-danger { background: var(--danger-light); color: var(--danger); }
+    .btn-full { width: 100%; }
+
+    /* ── NAV MESI ── */
+    #month-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 10px;
+    }
+    #month-label {
+      font-size: 16px;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+    .nav-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 34px; height: 34px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nav-btn:active { opacity: 0.6; }
+
+    /* ── GRIGLIA SETTIMANA ── */
+    #weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      padding: 0 8px;
+      margin-bottom: 4px;
+    }
+    #weekdays span {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      padding: 4px 0;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ── GRIGLIA GIORNI ── */
+    #calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+      padding: 0 8px 16px;
+    }
+
+    .day-cell {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 4px;
+      min-height: 72px;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.15s;
+    }
+    .day-cell:active { border-color: var(--accent); }
+    .day-cell.empty { background: transparent; border-color: transparent; cursor: default; }
+    .day-cell.today { border-color: var(--accent); }
+    .day-cell.today .day-num { color: var(--accent); font-weight: 600; }
+
+    .day-num {
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      color: var(--muted);
+      margin-bottom: 4px;
+      line-height: 1;
+    }
+
+    .event-chips {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .chip {
+      font-size: 10px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .more-badge {
+      font-size: 10px;
+      color: var(--muted);
+      padding-left: 2px;
+    }
+
+    /* ── MODAL ── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    #modal-overlay.open { display: flex;justify-content: center;align-items: center; }
+
+    #modal {
+      background: var(--surface);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 520px;
+      padding: 20px 20px 36px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    #modal-handle {
+      width: 36px; height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      margin: 0 auto 16px;
+    }
+    #modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      text-transform: capitalize;
+    }
+
+    .event-list { margin-bottom: 20px; }
+    .event-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .event-row:last-child { border-bottom: none; }
+    .event-color-bar {
+      width: 3px;
+      border-radius: 99px;
+      min-height: 36px;
+      align-self: stretch;
+      flex-shrink: 0;
+    }
+    .event-info { flex: 1; }
+    .event-name { font-weight: 500; font-size: 13px; }
+    .event-who {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .event-dates { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+    }
+    .delete-btn:active { background: var(--danger-light); color: var(--danger); }
+
+    /* form aggiunta */
+    #add-form { border-top: 1px solid var(--border); padding-top: 16px; }
+    #add-form h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-weight: 500; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 14px;
+      background: var(--bg);
+      outline: none;
+      color: var(--text);
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* ── LOADING / EMPTY ── */
+    #loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .empty-day { text-align: center; color: var(--muted); font-size: 13px; padding: 8px 0 16px; }
+
+    /* ── CONFIG NOTICE ── */
+    #config-notice {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin: 16px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    #config-notice strong { display: block; margin-bottom: 4px; }
+    #config-notice code {
+      background: #fff3cd;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════
+     ⚠️  CONFIGURAZIONE SUPABASE
+     Sostituisci i valori qui sotto
+     con quelli del tuo progetto.
+     ════════════════════════════════ -->
+<script>
+  const SUPABASE_URL = 'https://batmmzhfpxomdfnsaymt.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhdG1temhmcHhvbWRmbnNheW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNzU4MDgsImV4cCI6MjA5Mjk1MTgwOH0.jCwTgn9Qo-NDOI-kSaqBB5V_qF-e1uX4kukGIEz76mc';
+</script>
+
+<!-- HEADER -->
+<header>
+  <h1>📅 Calendario</h1>
+  <div id="user-pill" onclick="resetUser()">
+    <span class="dot"></span>
+    <span id="user-pill-name">—</span>
+    <span style="color:var(--muted);font-size:11px">✎</span>
+  </div>
+</header>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <h2>Benvenuto 👋</h2>
+  <p>Come ti chiami? Il tuo nome apparirà<br>sugli impegni che aggiungi.</p>
+  <input type="text" id="name-input" placeholder="Il tuo nome" maxlength="30" autocomplete="off" />
+  <button class="btn btn-primary btn-full" style="max-width:300px" onclick="saveName()">Entra →</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+
+  <div id="config-notice" style="display:none">
+    <strong>⚠️ Configura Supabase</strong>
+    Apri il file HTML e sostituisci <code>SUPABASE_URL</code> e <code>SUPABASE_ANON_KEY</code>
+    con i valori del tuo progetto. Poi crea una tabella <code>events</code> seguendo le istruzioni qui sotto.
+    Nel frattempo l'app funziona in modalità <strong>locale</strong> (dati non salvati).
+  </div>
+
+  <div id="month-nav">
+    <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+    <span id="month-label"></span>
+    <button class="nav-btn" onclick="changeMonth(1)">›</button>
+  </div>
+
+  <div id="weekdays">
+    <span>Lun</span><span>Mar</span><span>Mer</span>
+    <span>Gio</span><span>Ven</span><span>Sab</span><span>Dom</span>
+  </div>
+
+  <div id="loading">Caricamento...</div>
+  <div id="calendar-grid" style="display:none"></div>
+</div>
+
+<!-- MODAL GIORNO -->
+<div id="modal-overlay" onclick="closeModalOutside(event)">
+  <div id="modal">
+    <div id="modal-handle"></div>
+    <div id="modal-title"></div>
+    <div id="event-list" class="event-list"></div>
+    <div id="add-form">
+      <h3>+ Aggiungi impegno</h3>
+      <div class="form-group">
+        <label>Descrizione</label>
+        <input type="text" id="ev-text" placeholder="Es. Sono occupato, Vacanze..." maxlength="80" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Dal</label>
+          <input type="date" id="ev-start" />
+        </div>
+        <div class="form-group">
+          <label>Al</label>
+          <input type="date" id="ev-end" />
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="addEvent()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── COLORI PER PERSONA (generati automaticamente) ──
+const COLOR_PALETTE = [
+  { bg: '#d8f3dc', text: '#1b4332' },
+  { bg: '#dbeafe', text: '#1e3a5f' },
+  { bg: '#fce7f3', text: '#831843' },
+  { bg: '#fef3c7', text: '#78350f' },
+  { bg: '#ede9fe', text: '#3b0764' },
+  { bg: '#ffedd5', text: '#7c2d12' },
+  { bg: '#f0fdf4', text: '#14532d' },
+  { bg: '#fdf2f8', text: '#701a75' },
+];
+const userColors = {};
+
+function getColor(name) {
+  if (!userColors[name]) {
+    const idx = Object.keys(userColors).length % COLOR_PALETTE.length;
+    userColors[name] = COLOR_PALETTE[idx];
+  }
+  return userColors[name];
+}
+
+// ── STATE ──
+let currentUser = localStorage.getItem('cal_user') || null;
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth(); // 0-indexed
+let selectedDate = null;
+let allEvents = [];
+let sbClient = null;
+let useLocalMode = false;
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', () => {
+  initSupabase();
+  if (currentUser) showApp();
+  else showSetup();
+
+  document.getElementById('name-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveName();
+  });
+  document.getElementById('ev-text').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addEvent();
+  });
+});
+
+function initSupabase() {
+  if (SUPABASE_URL.includes('INSERISCI') || SUPABASE_ANON_KEY.includes('INSERISCI')) {
+    useLocalMode = true;
+    return;
+  }
+  try {
+    sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch(e) {
+    useLocalMode = true;
+  }
+}
+
+// ── SETUP ──
+function showSetup() {
+  document.getElementById('setup-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('user-pill').style.display = 'none';
+  setTimeout(() => document.getElementById('name-input').focus(), 100);
+}
+
+function saveName() {
+  const val = document.getElementById('name-input').value.trim();
+  if (!val) { document.getElementById('name-input').focus(); return; }
+  currentUser = val;
+  localStorage.setItem('cal_user', val);
+  showApp();
+}
+
+function resetUser() {
+  if (!confirm('Cambia nome?')) return;
+  localStorage.removeItem('cal_user');
+  currentUser = null;
+  showSetup();
+}
+
+function showApp() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-pill').style.display = 'flex';
+  document.getElementById('user-pill-name').textContent = currentUser;
+  if (useLocalMode) document.getElementById('config-notice').style.display = 'block';
+  loadEvents();
+}
+
+// ── CARICA EVENTI ──
+async function loadEvents() {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('calendar-grid').style.display = 'none';
+
+  if (useLocalMode) {
+    const stored = localStorage.getItem('cal_events');
+    allEvents = stored ? JSON.parse(stored) : [];
+  } else {
+    try {
+      const { data, error } = await sbClient.from('events').select('*').order('start_date');
+      if (error) throw error;
+      allEvents = data || [];
+    } catch(e) {
+      console.error(e);
+      allEvents = [];
+    }
+  }
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('calendar-grid').style.display = 'grid';
+  renderCalendar();
+}
+
+// ── RENDER CALENDARIO ──
+function renderCalendar() {
+  const grid = document.getElementById('calendar-grid');
+  const label = document.getElementById('month-label');
+
+  const monthNames = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+    'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  label.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay(); // 0=Dom
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  // Converti domenica=0 → lunedì=0
+  const startOffset = (firstDay + 6) % 7;
+
+  const today = new Date();
+  const todayStr = toDateStr(today);
+
+  grid.innerHTML = '';
+
+  // celle vuote prima
+  for (let i = 0; i < startOffset; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'day-cell empty';
+    grid.appendChild(empty);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${currentYear}-${pad(currentMonth+1)}-${pad(d)}`;
+    const cell = document.createElement('div');
+    cell.className = 'day-cell' + (dateStr === todayStr ? ' today' : '');
+    cell.onclick = () => openModal(dateStr);
+
+    const num = document.createElement('div');
+    num.className = 'day-num';
+    num.textContent = d;
+    cell.appendChild(num);
+
+    const chips = document.createElement('div');
+    chips.className = 'event-chips';
+
+    const dayEvents = getEventsForDay(dateStr);
+    dayEvents.slice(0, 2).forEach(ev => {
+      const c = getColor(ev.author);
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.style.background = c.bg;
+      chip.style.color = c.text;
+      chip.textContent = ev.author;
+      chips.appendChild(chip);
+    });
+    if (dayEvents.length > 2) {
+      const more = document.createElement('div');
+      more.className = 'more-badge';
+      more.textContent = `+${dayEvents.length - 2}`;
+      chips.appendChild(more);
+    }
+    cell.appendChild(chips);
+    grid.appendChild(cell);
+  }
+}
+
+function getEventsForDay(dateStr) {
+  return allEvents.filter(ev => ev.start_date <= dateStr && ev.end_date >= dateStr);
+}
+
+// ── NAVIGAZIONE MESI ──
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  renderCalendar();
+}
+
+// ── MODAL ──
+function openModal(dateStr) {
+  selectedDate = dateStr;
+  const d = new Date(dateStr + 'T00:00:00');
+  const dayNames = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  const monthNames = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
+    'luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  document.getElementById('modal-title').textContent =
+    `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+
+  // pre-fill date fields
+  document.getElementById('ev-start').value = dateStr;
+  document.getElementById('ev-end').value = dateStr;
+  document.getElementById('ev-text').value = '';
+
+  renderModalEvents(dateStr);
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('ev-text').focus(), 300);
+}
+
+function renderModalEvents(dateStr) {
+  const list = document.getElementById('event-list');
+  const dayEvents = getEventsForDay(dateStr);
+  if (dayEvents.length === 0) {
+    list.innerHTML = '<div class="empty-day">Nessun impegno</div>';
+    return;
+  }
+  list.innerHTML = '';
+  dayEvents.forEach(ev => {
+    const c = getColor(ev.author);
+    const row = document.createElement('div');
+    row.className = 'event-row';
+
+    const bar = document.createElement('div');
+    bar.className = 'event-color-bar';
+    bar.style.background = c.text;
+
+    const info = document.createElement('div');
+    info.className = 'event-info';
+
+    const name = document.createElement('div');
+    name.className = 'event-name';
+    name.textContent = ev.text;
+
+    const who = document.createElement('div');
+    who.className = 'event-who';
+    who.textContent = ev.author;
+
+    info.appendChild(name);
+    info.appendChild(who);
+
+    if (ev.start_date !== ev.end_date) {
+      const dates = document.createElement('div');
+      dates.className = 'event-dates';
+      dates.textContent = `${formatDate(ev.start_date)} → ${formatDate(ev.end_date)}`;
+      info.appendChild(dates);
+    }
+
+    const del = document.createElement('button');
+    del.className = 'delete-btn';
+    del.textContent = '×';
+    del.title = 'Elimina';
+    del.onclick = () => deleteEvent(ev.id);
+
+    row.appendChild(bar);
+    row.appendChild(info);
+    // solo l'autore può eliminare
+    if (ev.author === currentUser) row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ── AGGIUNGI EVENTO ──
+async function addEvent() {
+  const text = document.getElementById('ev-text').value.trim();
+  const start = document.getElementById('ev-start').value;
+  const end = document.getElementById('ev-end').value;
+
+  if (!text) { document.getElementById('ev-text').focus(); return; }
+  if (!start || !end) { alert('Inserisci le date'); return; }
+  if (start > end) { alert('La data di fine deve essere >= data di inizio'); return; }
+
+  const newEvent = {
+    id: Date.now().toString(),
+    author: currentUser,
+    text,
+    start_date: start,
+    end_date: end,
+    created_at: new Date().toISOString()
+  };
+
+  if (useLocalMode) {
+    allEvents.push(newEvent);
+    localStorage.setItem('cal_events', JSON.stringify(allEvents));
+  } else {
+    try {
+      const { data, error } = await sbClient.from('events').insert([{
+        author: currentUser,
+        text,
+        start_date: start,
+        end_date: end,
+      }]).select().single();
+      if (error) throw error;
+      allEvents.push(data);
+    } catch(e) {
+      console.error(e);
+      alert('Errore nel salvare. Controlla la configurazione Supabase.');
+      return;
+    }
+  }
+
+  document.getElementById('ev-text').value = '';
+  renderCalendar();
+  renderModalEvents(selectedDate);
+}
+
+// ── ELIMINA EVENTO ──
+async function deleteEvent(id) {
+  if (!confirm('Eliminare questo impegno?')) return;
+
+  if (useLocalMode) {
+    allEvents = allEvents.filter(e => e.id != id);
+    localStorage.setItem('cal_events', JSON.stringify(allEvents));
+  } else {
+    try {
+      const { error } = await sbClient.from('events').delete().eq('id', id).eq('author', currentUser);
+      if (error) throw error;
+      allEvents = allEvents.filter(e => e.id != id);
+    } catch(e) {
+      console.error(e);
+      alert('Errore nell\'eliminazione.');
+      return;
+    }
+  }
+
+  renderCalendar();
+  renderModalEvents(selectedDate);
+}
+
+// ── UTILS ──
+function pad(n) { return String(n).padStart(2, '0'); }
+function toDateStr(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function formatDate(str) {
+  const [y,m,d] = str.split('-');
+  return `${d}/${m}/${y}`;
+}
+</script>
+
+<!--
+════════════════════════════════════════════════════════
+  ISTRUZIONI SUPABASE
+════════════════════════════════════════════════════════
+
+1. Crea un account su https://supabase.com e un nuovo progetto.
+
+2. Vai su "SQL Editor" e incolla questo per creare la tabella:
+
+CREATE TABLE events (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  author      text NOT NULL,
+  text        text NOT NULL,
+  start_date  date NOT NULL,
+  end_date    date NOT NULL,
+  created_at  timestamptz DEFAULT now()
+);
+
+-- Permetti a tutti di leggere e scrivere (senza autenticazione)
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Lettura pubblica"
+  ON events FOR SELECT USING (true);
+
+CREATE POLICY "Inserimento pubblico"
+  ON events FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Eliminazione dal proprio autore"
+  ON events FOR DELETE USING (true);
+
+3. Vai su "Project Settings" → "API" e copia:
+   - Project URL  → incollalo come SUPABASE_URL nel file HTML
+   - anon public key → incollalo come SUPABASE_ANON_KEY
+
+4. Sostituisci i valori nel file HTML e il gioco è fatto!
+
+════════════════════════════════════════════════════════
+-->
+</body>
+</html>
