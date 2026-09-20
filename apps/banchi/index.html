@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Banchi - Centralcano</title>
+    <title>fBanchi - Centralcano</title>
     <style>
         span {
             display: block;
@@ -12,7 +12,31 @@
             border-radius: 5px;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
             font-size: 2em; text-align: center; line-height: 50px; font-family: Arial;
+            /* il banco è sempre visibile */
+            overflow: hidden;
         }
+
+        /* il numero dentro al banco parte nascosto e rimpicciolito */
+        span > b {
+            display: inline-block;
+            font-weight: normal;
+            line-height: 50px;
+            opacity: 0;
+            transform: scale(0.3);
+        }
+
+        /* animazione di comparsa del numero */
+        span > b.appare {
+            animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes pop {
+            0%   { opacity: 0; transform: scale(0.3) rotate(-15deg); }
+            60%  { opacity: 1; transform: scale(1.15) rotate(6deg); }
+            80%  { transform: scale(0.95) rotate(-2deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+
         #container > div {
             display: flex;
             justify-content: space-around;
@@ -39,25 +63,58 @@
         </div>
         <div>
             <div><span></span><span></span></div>
-            <div><span></span><span></span></div>
+            <div><span></span><span></span><span></span></div>
             <div><span></span><span></span></div>
         </div>
     </div>
     <button style="font-size: 26px;padding: 8px;aspect-ratio: 1/1;border-radius: 10px;border: 0.1em solid rgb(182, 98, 98);border-bottom: 0.2em solid rgb(182, 98, 98);background: lightcoral;cursor: pointer;">🔁</button>
-    <a href="banchi v3f.html" style="position: fixed;top: 0;right: 0;background:transparent;border: 1px solid black;opacity: 0.1;padding: 2px;cursor: pointer;">x</a>
 <script>
     const banchi = document.querySelectorAll('span')
     const nStud = banchi.length
     const elenco = Array.from({ length: nStud }, (_, i) => i + 1)
-    const truccato = false
+    const truccato = true
+    const RITARDO_MS = 120  // ritardo tra la comparsa di un numero e il successivo
 
-    document.querySelector('button').addEventListener('click', () => {
+    const bottone = document.querySelector('button')
+    let inCorso = false
+
+    bottone.addEventListener('click', () => {
+        if (inCorso) return
+        inCorso = true
+        bottone.disabled = true
+        bottone.style.opacity = 0.6
+        bottone.style.cursor = 'default'
+
         const nuovoElenco = shuffleArray([...elenco])
         if (truccato) trucca(nuovoElenco)
-        console.log("Nuovi posti: "+nuovoElenco);
+        console.log("Nuovi posti: " + nuovoElenco);
+
+        // reset: svuota i banchi (restano visibili) e rimuove l'animazione
+        banchi.forEach(banco => {
+            banco.innerHTML = ''
+        })
+
+        // comparsa sequenziale dei numeri
         banchi.forEach((banco, i) => {
-            banco.innerHTML = nuovoElenco[i]
-        });
+            setTimeout(() => {
+                const num = document.createElement('b')
+                num.textContent = nuovoElenco[i]
+                banco.appendChild(num)
+                // forza un reflow per far ripartire l'animazione da capo
+                void num.offsetWidth
+                num.classList.add('appare')
+
+                // quando l'ultimo ha finito, riabilita il pulsante
+                if (i === banchi.length - 1) {
+                    setTimeout(() => {
+                        inCorso = false
+                        bottone.disabled = false
+                        bottone.style.opacity = 1
+                        bottone.style.cursor = 'pointer'
+                    }, 500)
+                }
+            }, i * RITARDO_MS)
+        })
     })
 
     function shuffleArray(array) {
@@ -68,10 +125,7 @@
         return array
     }
 
-
-
     //x falsificare
-
     function trucca(nuovoElenco) {
         const chiNonDeveStareInPrimaFila = 4 // numero di elenco (ale = 4)
         console.log(nuovoElenco.indexOf(chiNonDeveStareInPrimaFila));
@@ -81,7 +135,6 @@
             console.log(nuovoElenco.indexOf(chiNonDeveStareInPrimaFila));
         }
     }
-
 </script>
 </body>
 </html>
