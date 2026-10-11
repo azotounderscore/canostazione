@@ -50,7 +50,7 @@ const apps = [
             display: "Snake",
             id: "snake"
       },
-      webgameshub {
+      webgameshub = {
             display: "Web Games Hub",
             id: "webgameshub"
       }
