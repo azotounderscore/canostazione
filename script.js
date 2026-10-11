@@ -49,6 +49,10 @@ const apps = [
       snake = {
             display: "Snake",
             id: "snake"
+      },
+      webgameshub {
+            display: "Web Games Hub",
+            id: "webgameshub"
       }
       
 ]
