@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🎮 Web Games Hub</title>
+<style>
+  :root{
+    --bg:#07070c;
+    --card:#12121d;
+    --card-hover:#181828;
+    --border:#242440;
+    --text:#ececf5;
+    --muted:#8b8ba6;
+    --accent:#7c5cff;
+    --accent2:#00e5a0;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  html{scroll-behavior:smooth}
+
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    padding:48px 20px 80px;
+    position:relative;
+    overflow-x:hidden;
+  }
+
+  /* sfondo decorativo */
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    background:
+      radial-gradient(700px 500px at 12% -10%, rgba(124,92,255,.22), transparent 60%),
+      radial-gradient(600px 450px at 88% 0%, rgba(0,229,160,.14), transparent 60%),
+      radial-gradient(900px 700px at 50% 110%, rgba(124,92,255,.10), transparent 65%);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .wrap{max-width:1180px;margin:0 auto;position:relative;z-index:1}
+
+  /* ---------- HEADER ---------- */
+  header{text-align:center;margin-bottom:44px}
+
+  header h1{
+    font-size:clamp(2rem,5vw,3.2rem);
+    font-weight:800;
+    letter-spacing:-1px;
+    background:linear-gradient(100deg,#fff 10%,var(--accent) 55%,var(--accent2) 95%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    margin-bottom:12px;
+  }
+
+  header p{
+    color:var(--muted);
+    font-size:1rem;
+    letter-spacing:.4px;
+  }
+
+  header .pill{
+    display:inline-block;
+    margin-top:16px;
+    padding:7px 16px;
+    font-size:.75rem;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    border:1px solid var(--border);
+    border-radius:999px;
+    color:var(--accent2);
+    background:rgba(0,229,160,.06);
+  }
+
+  /* ---------- CONTROLLI ---------- */
+  .controls{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    align-items:center;
+    margin-bottom:36px;
+  }
+
+  #search{
+    width:100%;
+    max-width:420px;
+    padding:14px 20px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.03);
+    color:var(--text);
+    font-size:.95rem;
+    outline:none;
+    transition:border-color .2s, box-shadow .2s, background .2s;
+  }
+
+  #search::placeholder{color:#5c5c78}
+
+  #search:focus{
+    border-color:var(--accent);
+    background:rgba(124,92,255,.07);
+    box-shadow:0 0 0 4px rgba(124,92,255,.15);
+  }
+
+  .filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:9px;
+    justify-content:center;
+  }
+
+  .chip{
+    padding:8px 16px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:transparent;
+    color:var(--muted);
+    font-size:.82rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:.2s;
+    font-family:inherit;
+  }
+
+  .chip:hover{color:var(--text);border-color:#3a3a60}
+
+  .chip.active{
+    background:linear-gradient(135deg,var(--accent),#5b3ce0);
+    border-color:transparent;
+    color:#fff;
+    box-shadow:0 6px 20px -6px rgba(124,92,255,.7);
+  }
+
+  /* ---------- GRIGLIA ---------- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(270px,1fr));
+    gap:16px;
+  }
+
+  .card{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:16px 18px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    text-decoration:none;
+    color:inherit;
+    overflow:hidden;
+    transition:transform .22s ease, border-color .22s ease, background .22s ease, box-shadow .22s ease;
+    animation:rise .5s backwards;
+  }
+
+  @keyframes rise{
+    from{opacity:0;transform:translateY(14px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+
+  /* bordo luminoso in hover */
+  .card::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:16px;
+    padding:1px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;
+    mask-composite:exclude;
+    opacity:0;
+    transition:opacity .25s;
+    pointer-events:none;
+  }
+
+  .card:hover{
+    transform:translateY(-4px);
+    background:var(--card-hover);
+    box-shadow:0 16px 34px -18px rgba(124,92,255,.9);
+  }
+
+  .card:hover::after{opacity:1}
+
+  .card:active{transform:translateY(-1px) scale(.99)}
+
+  .icon{
+    flex:0 0 auto;
+    width:46px;
+    height:46px;
+    display:grid;
+    place-items:center;
+    font-size:1.4rem;
+    border-radius:13px;
+    background:linear-gradient(150deg,rgba(124,92,255,.18),rgba(0,229,160,.10));
+    border:1px solid rgba(124,92,255,.25);
+  }
+
+  .info{flex:1;min-width:0}
+
+  .info h3{
+    font-size:.96rem;
+    font-weight:700;
+    letter-spacing:-.2px;
+    margin-bottom:5px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .tag{
+    display:inline-block;
+    font-size:.66rem;
+    text-transform:uppercase;
+    letter-spacing:1.2px;
+    font-weight:700;
+    color:var(--muted);
+    background:rgba(255,255,255,.04);
+    border:1px solid var(--border);
+    padding:3px 8px;
+    border-radius:6px;
+  }
+
+  .arrow{
+    flex:0 0 auto;
+    font-size:1rem;
+    color:#4a4a6b;
+    transition:color .22s, transform .22s;
+  }
+
+  .card:hover .arrow{
+    color:var(--accent2);
+    transform:translate(3px,-3px);
+  }
+
+  .hidden{display:none}
+
+  /* ---------- STATO VUOTO ---------- */
+  #empty{
+    display:none;
+    text-align:center;
+    padding:60px 20px;
+    color:var(--muted);
+    font-size:1rem;
+  }
+  #empty.show{display:block}
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    max-width:1180px;
+    margin:56px auto 0;
+    text-align:center;
+    color:#5f5f7d;
+    font-size:.82rem;
+    line-height:1.9;
+    position:relative;
+    z-index:1;
+  }
+
+  footer strong{color:var(--muted)}
+
+  footer .divider{
+    width:70px;
+    height:2px;
+    margin:0 auto 22px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);
+    border-radius:2px;
+  }
+
+  @media(max-width:520px){
+    body{padding:32px 14px 60px}
+    .grid{grid-template-columns:1fr}
+    .card{padding:14px}
+    .icon{width:42px;height:42px;font-size:1.25rem}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <h1>Web Games Hub</h1>
+    <p>Clicca su un gioco per aprirlo direttamente nel browser.</p>
+    <span class="pill">Full Games List · Enjoy!</span>
+  </header>
+
+  <div class="controls">
+    <input type="text" id="search" placeholder="🔍 Cerca un gioco..." autocomplete="off">
+    <div class="filters">
+      <button class="chip active" data-cat="all">Tutti</button>
+      <button class="chip" data-cat="zombies">Zombies</button>
+      <button class="chip" data-cat="shooter">Sparatutto</button>
+      <button class="chip" data-cat="retro">Retro FPS</button>
+      <button class="chip" data-cat="openworld">Open World</button>
+      <button class="chip" data-cat="skate">Skate</button>
+      <button class="chip" data-cat="altro">Altro</button>
+    </div>
+  </div>
+
+  <main class="grid" id="grid">
+
+    <a class="card" target="_blank" rel="noopener" data-cat="zombies" data-name="bo1 zombies black ops" href="https://vel.gg/bo1z">
+      <div class="icon">🧟</div>
+      <div class="info"><h3>BO1 Zombies</h3><span class="tag">Zombies</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="zombies" data-name="moon zombies" href="https://moon-zombies.pages.dev">
+      <div class="icon">🌕</div>
+      <div class="info"><h3>Moon</h3><span class="tag">Zombies</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="zombies" data-name="kino der toten zombies" href="https://kino-der-toten.pages.dev">
+      <div class="icon">🎬</div>
+      <div class="info"><h3>Kino der Toten</h3><span class="tag">Zombies</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="zombies" data-name="bo3 cheese cube black ops 3" href="https://cheese-cube.pages.dev">
+      <div class="icon">🧀</div>
+      <div class="info"><h3>BO3 Cheese Cube</h3><span class="tag">Zombies</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="shooter" data-name="black ops 2 bo2" href="https://vibeslops.luckeysystems.com">
+      <div class="icon">🎯</div>
+      <div class="info"><h3>Black Ops 2</h3><span class="tag">Sparatutto</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="shooter" data-name="modern warfare 2 mw2" href="https://ovz-game-production.up.railway.app">
+      <div class="icon">💥</div>
+      <div class="info"><h3>Modern Warfare 2</h3><span class="tag">Sparatutto</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="skate" data-name="skate 3" href="https://skate.aaddpp.lol">
+      <div class="icon">🛹</div>
+      <div class="info"><h3>Skate 3</h3><span class="tag">Skate</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="skate" data-name="skate rust" href="https://global-terror.net">
+      <div class="icon">🛹</div>
+      <div class="info"><h3>Skate Rust</h3><span class="tag">Skate</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="shooter" data-name="cs surf counter strike" href="https://surfd.net">
+      <div class="icon">🌊</div>
+      <div class="info"><h3>CS Surf</h3><span class="tag">Sparatutto</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="shooter" data-name="halo ce combat evolved" href="https://mitchellhynes.com/halo">
+      <div class="icon">🪖</div>
+      <div class="info"><h3>Halo CE</h3><span class="tag">Sparatutto</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="shooter" data-name="halo ce mobile" href="https://hcemobile.com">
+      <div class="icon">📱</div>
+      <div class="info"><h3>Halo CE Mobile</h3><span class="tag">Sparatutto</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="altro" data-name="pes 6 pro evolution soccer calcio" href="https://pes6.optijuegos.net">
+      <div class="icon">⚽</div>
+      <div class="info"><h3>PES 6</h3><span class="tag">Sport</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="openworld" data-name="gta 5 grand theft auto v" href="https://web.archive.org/" title="URL originale troncato – link generico a Internet Archive">
+      <div class="icon">🚗</div>
+      <div class="info"><h3>GTA 5</h3><span class="tag">Open World</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="openworld" data-name="gta vice city grand theft auto" href="https://joncodeofficial.github.io/" title="URL originale troncato – link alla root GitHub Pages">
+      <div class="icon">🌴</div>
+      <div class="info"><h3>GTA Vice City</h3><span class="tag">Open World</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="openworld" data-name="the simpsons hit and run" href="https://shar-wasm.cjoseph.workers.dev/?skipmovie">
+      <div class="icon">🍩</div>
+      <div class="info"><h3>The Simpsons: Hit &amp; Run</h3><span class="tag">Open World</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="retro" data-name="quake 1" href="https://q1.pieter.com">
+      <div class="icon">🌀</div>
+      <div class="info"><h3>Quake 1</h3><span class="tag">Retro FPS</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="retro" data-name="quake 2" href="https://q2.pieter.com">
+      <div class="icon">🌀</div>
+      <div class="info"><h3>Quake 2</h3><span class="tag">Retro FPS</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="retro" data-name="quake 3 arena" href="https://q3.pieter.com">
+      <div class="icon">🌀</div>
+      <div class="info"><h3>Quake 3</h3><span class="tag">Retro FPS</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="retro" data-name="return to castle wolfenstein rtcw" href="https://rtcw.pieter.com">
+      <div class="icon">🏰</div>
+      <div class="info"><h3>Return to Castle Wolfenstein</h3><span class="tag">Retro FPS</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="retro" data-name="unreal tournament" href="https://ut.pieter.com">
+      <div class="icon">⚡</div>
+      <div class="info"><h3>Unreal Tournament</h3><span class="tag">Retro FPS</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="retro" data-name="half life" href="https://pixelsuft.github.io/hl/">
+      <div class="icon">🔬</div>
+      <div class="info"><h3>Half-Life</h3><span class="tag">Retro FPS</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="retro" data-name="half life cs 1.6 counter strike xash" href="https://x8bitrain.github.io/webXash/">
+      <div class="icon">🧪</div>
+      <div class="info"><h3>Half-Life / CS 1.6</h3><span class="tag">Retro FPS</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="altro" data-name="diablo rpg" href="https://johnimril.github.io/diablo_web/">
+      <div class="icon">⚔️</div>
+      <div class="info"><h3>Diablo</h3><span class="tag">RPG</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="altro" data-name="hedgewars worms strategia" href="https://webwars.link">
+      <div class="icon">🐹</div>
+      <div class="info"><h3>Hedgewars</h3><span class="tag">Strategia</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+    <a class="card" target="_blank" rel="noopener" data-cat="openworld" data-name="more gta minecraft wasm arcade" href="https://wasmarcade.com/" title="URL originale troncato – link alla root di WASM Arcade">
+      <div class="icon">🧱</div>
+      <div class="info"><h3>More GTA / Minecraft</h3><span class="tag">Open World</span></div>
+      <span class="arrow">↗</span>
+    </a>
+
+  </main>
+
+  <div id="empty">😕 Nessun gioco trovato con questa ricerca.</div>
+
+</div>
+
+<footer>
+  <div class="divider"></div>
+  <p>
+    <strong>Fan ports.</strong> Alcuni richiedono i tuoi file di gioco originali.<br>
+    Evita tutto ciò che ti chiede di scaricare un launcher.
+  </p>
+  <p style="margin-top:10px">Alcuni link erano troncati nell'elenco originale e puntano alla root del sito.</p>
+</footer>
+
+<script>
+  const cards  = Array.from(document.querySelectorAll('.card'));
+  const search = document.getElementById('search');
+  const chips  = Array.from(document.querySelectorAll('.chip'));
+  const empty  = document.getElementById('empty');
+
+  // animazione d'ingresso scaglionata
+  cards.forEach((c, i) => c.style.animationDelay = (i * 28) + 'ms');
+
+  let activeCat = 'all';
+
+  function applyFilters(){
+    const q = search.value.trim().toLowerCase();
+    let visible = 0;
+
+    cards.forEach(card => {
+      const matchCat  = activeCat === 'all' || card.dataset.cat === activeCat;
+      const matchText = card.dataset.name.includes(q) ||
+                        card.querySelector('h3').textContent.toLowerCase().includes(q);
+      const show = matchCat && matchText;
+
+      card.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+
+    empty.classList.toggle('show', visible === 0);
+  }
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeCat = chip.dataset.cat;
+      applyFilters();
+    });
+  });
+
+  search.addEventListener('input', applyFilters);
+</script>
+
+</body>
+</html>
