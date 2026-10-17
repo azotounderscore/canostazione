@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Silent Pomodoro</title>
+
+<style>
+    :root {
+        --bg: #111;
+        --surface: #333;
+        --surface-hover: rgba(245, 245, 245, .16);
+        --text: #f5f5f5;
+        --muted: rgba(245, 245, 245, .35);
+        --border: rgba(245, 245, 245, .12);
+    }
+
+    *, *::before, *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 24px;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 28px;
+        width: min(380px, 100%);
+    }
+
+    /* ---------- Orologio ---------- */
+    .time-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
+    .clock-container {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        font-size: clamp(3.5rem, 22vw, 6.5rem);
+        font-weight: 200;
+        line-height: 1;
+        letter-spacing: -.02em;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum" 1;
+        user-select: none;
+    }
+
+    .colon {
+        margin: 0 .08em;
+        color: var(--muted);
+        transition: opacity .3s ease;
+    }
+
+    body.playing .colon {
+        animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: .25; }
+    }
+
+    /* ---------- Pulsanti ---------- */
+    .time-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 28px;
+    }
+
+    .time-actions button {
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 1.4rem;
+        line-height: 1;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: background .23s cubic-bezier(.075, .82, .165, 1),
+                    transform .23s cubic-bezier(.075, .82, .165, 1),
+                    opacity .23s ease;
+    }
+
+    .time-actions button:not(:disabled):hover {
+        background: var(--surface-hover);
+    }
+
+    .time-actions button:not(:disabled):active {
+        transform: scale(.93);
+    }
+
+    .time-actions button:focus-visible {
+        outline: 2px solid var(--text);
+        outline-offset: 3px;
+    }
+
+    .time-actions button:disabled {
+        opacity: .3;
+        cursor: not-allowed;
+    }
+
+    .play-btn {
+        width: 64px;
+        height: 64px;
+        background: var(--text);
+        color: var(--bg);
+        border-color: transparent;
+    }
+
+    .play-btn:not(:disabled):hover {
+        background: #fff;
+    }
+
+    .play-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+    }
+
+    .play-btn .icon-pause { display: none; }
+    .play-btn.is-playing .icon-play { display: none; }
+    .play-btn.is-playing .icon-pause { display: block; }
+
+    /* ---------- Barra di progresso ---------- */
+    .bar-container {
+        width: 100%;
+        height: 8px;
+        background: #262626;
+        border-radius: 999px;
+        overflow: hidden;
+    }
+
+    .bar {
+        width: 0%;
+        height: 100%;
+        background: var(--text);
+        border-radius: inherit;
+        transition: width .35s linear;
+    }
+
+    /* Blink di fine tempo: 3 respiri morbidi da 1.2s ciascuno,
+       sincronizzati con i 3 "swell" dell'arpeggio etereo. */
+    .bar.finishing {
+        animation: finishBlink 1.2s ease-in-out 3;
+    }
+
+    @keyframes finishBlink {
+        0% {
+            background: var(--text);
+            box-shadow: inset 0 0 0 transparent;
+        }
+        25% {
+            background: #fff;
+            box-shadow: inset 0 0 28px rgba(255, 255, 255, .85);
+        }
+        60% {
+            background: var(--text);
+            box-shadow: inset 0 0 0 transparent;
+        }
+        100% {
+            background: var(--text);
+            box-shadow: inset 0 0 0 transparent;
+        }
+    }
+
+    /* ---------- Indicatori sequenza Pomodoro ---------- */
+    .pomo-track {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        height: 24px;
+    }
+    .pomo-track.visible {
+        display: flex;
+        animation: trackFadeIn .4s ease both;
+    }
+    @keyframes trackFadeIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .pomo-ind {
+        border-radius: 999px;
+        border: 1.5px solid var(--border);
+        background: transparent;
+        transition: background .4s ease, border-color .4s ease;
+    }
+    .pomo-ind.work {
+        width: 12px;
+        height: 22px;
+    }
+    .pomo-ind.break {
+        width: 8px;
+        height: 12px;
+    }
+    .pomo-ind.current {
+        border-color: rgba(245, 245, 245, .55);
+    }
+    body.playing .pomo-ind.current {
+        animation: indPulse 2.4s ease-in-out infinite;
+    }
+    @keyframes indPulse {
+        0%, 100% { border-color: rgba(245, 245, 245, .55); }
+        50%      { border-color: rgba(245, 245, 245, .15); }
+    }
+    .pomo-ind.completed {
+        background: var(--text);
+        border-color: var(--text);
+    }
+
+    /* ---------- Pulsanti fissi (mute / pomodoro) ---------- */
+    .mute-btn,
+    .pomo-btn {
+        position: fixed;
+        top: 18px;
+        width: 40px;
+        height: 40px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        background: var(--surface);
+        color: var(--text);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: background .2s ease, transform .2s ease,
+                    color .2s ease, border-color .2s ease;
+    }
+    .mute-btn { right: 18px; }
+    .pomo-btn { left: 18px; }
+
+    .mute-btn:hover,
+    .pomo-btn:hover { background: var(--surface-hover); }
+
+    .mute-btn:active,
+    .pomo-btn:active { transform: scale(.92); }
+
+    .mute-btn:focus-visible,
+    .pomo-btn:focus-visible {
+        outline: 2px solid var(--text);
+        outline-offset: 3px;
+    }
+
+    .mute-btn svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+    }
+    .mute-btn .icon-sound-off { display: none; }
+    body.muted .mute-btn .icon-sound-on  { display: none; }
+    body.muted .mute-btn .icon-sound-off { display: block; }
+
+    .pomo-btn svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+    body.pomodoro .pomo-btn {
+        background: var(--text);
+        color: var(--bg);
+        border-color: transparent;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation: none !important;
+            transition: none !important;
+        }
+    }
+</style>
+</head>
+<body>
+
+<button class="pomo-btn" type="button" aria-pressed="false" aria-label="Attiva modalità Pomodoro">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="13" r="8"/>
+        <path d="M12 9v4l2.5 2.5"/>
+        <path d="M9 2h6"/>
+    </svg>
+</button>
+
+<button class="mute-btn" type="button" aria-label="Attiva/disattiva audio">
+    <svg class="icon-sound-on" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 10v4h4l5 4V6L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a6.8 6.8 0 0 1 0 13.4v2.1a8.9 8.9 0 0 0 0-17.6z"/>
+    </svg>
+    <svg class="icon-sound-off" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 10v4h4l5 4V6L7 10H3zm17.5 2-2.1-2.1-1.4 1.4L19.1 13l-2.1 2.1 1.4 1.4L20.5 15l2.1 2.1 1.4-1.4L21.9 13l2.1-2.1-1.4-1.4L20.5 11l-2-2-1.4 1.4L19.1 13z"/>
+        <path d="M14 3.2v2.1a6.8 6.8 0 0 1 0 13.4v2.1a8.9 8.9 0 0 0 0-17.6z" opacity=".35"/>
+    </svg>
+</button>
+
+<main>
+
+    <div class="time-container">
+        <div class="clock-container">
+            <span class="mins">25</span>
+            <span class="colon">:</span>
+            <span class="secs">00</span>
+        </div>
+
+        <div class="time-actions">
+            <button class="sub-btn" type="button" aria-label="Sottrai un minuto">−</button>
+
+            <button class="play-btn" type="button" aria-label="Avvia">
+                <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+                <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 5h4v14H7zM13 5h4v14h-4z"/>
+                </svg>
+            </button>
+
+            <button class="add-btn" type="button" aria-label="Aggiungi un minuto">+</button>
+        </div>
+    </div>
+
+    <div class="bar-container">
+        <div class="bar"></div>
+    </div>
+
+    <div class="pomo-track" id="pomoTrack" role="list" aria-label="Sequenza Pomodoro"></div>
+
+</main>
+
+<script>
+    /* ======================================================
+       AUDIO ENGINE — ETEREO
+       ------------------------------------------------------
+       • Riverbero a convoluzione (IR sintetica, coda ~2.5s)
+       • Voci costruite con 2 oscillatori detunati (chorus)
+       • Envelope con attacco lento e rilascio lungo
+       • Filtro lowpass che addolcisce le alte
+       ====================================================== */
+    let audioCtx = null;
+    let masterGain = null;
+    let reverbNode = null;
+    let muted = false;
+
+    function createImpulseResponse(ctx, duration, decay) {
+        const rate = ctx.sampleRate;
+        const length = Math.max(1, Math.floor(rate * duration));
+        const impulse = ctx.createBuffer(2, length, rate);
+        for (let ch = 0; ch < 2; ch++) {
+            const data = impulse.getChannelData(ch);
+            for (let i = 0; i < length; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+            }
+        }
+        return impulse;
+    }
+
+    function getCtx() {
+        if (!audioCtx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return null;
+            audioCtx = new AC();
+
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 1;
+            masterGain.connect(audioCtx.destination);
+
+            // Riverbero: input -> convolver -> wet -> master
+            reverbNode = audioCtx.createConvolver();
+            reverbNode.buffer = createImpulseResponse(audioCtx, 2.5, 2.2);
+
+            const wetGain = audioCtx.createGain();
+            wetGain.gain.value = 0.55;
+            reverbNode.connect(wetGain).connect(masterGain);
+        }
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        return audioCtx;
+    }
+
+    /**
+     * Nota eterea: due sine detunate + filtro lowpass + inviluppo morbido.
+     */
+    function ethereal({
+        freq = 440,
+        duration = 2.0,
+        gain = 0.06,
+        delay = 0,
+        attack = 0.15,
+        release = 1.4,
+        detune = 6,        // cents di scostamento tra le due voci
+        cutoff = 4,        // moltiplicatore della freq per il lowpass
+        sparkle = false    // aggiunge un'armonica acuta molto tenue
+    } = {}) {
+        if (muted) return;
+        const ctx = getCtx();
+        if (!ctx) return;
+
+        attack  = Math.min(attack, duration * 0.6);
+        release = Math.min(release, duration - attack);
+
+        const now = ctx.currentTime + delay;
+
+        const env = ctx.createGain();
+        env.gain.setValueAtTime(0.0001, now);
+        env.gain.exponentialRampToValueAtTime(gain, now + attack);
+        env.gain.setValueAtTime(gain, now + Math.max(attack, duration - release));
+        env.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.value = Math.min(freq * cutoff, 8000);
+        filter.Q.value = 0.7;
+
+        const o1 = ctx.createOscillator();
+        o1.type = "sine";
+        o1.frequency.value = freq;
+        o1.detune.value = -detune;
+
+        const o2 = ctx.createOscillator();
+        o2.type = "sine";
+        o2.frequency.value = freq;
+        o2.detune.value = +detune;
+
+        const g1 = ctx.createGain(); g1.gain.value = 0.5;
+        const g2 = ctx.createGain(); g2.gain.value = 0.5;
+
+        o1.connect(g1).connect(filter);
+        o2.connect(g2).connect(filter);
+
+        if (sparkle) {
+            const o3 = ctx.createOscillator();
+            o3.type = "sine";
+            o3.frequency.value = freq * 2;
+            const g3 = ctx.createGain();
+            g3.gain.value = 0.10;
+            o3.connect(g3).connect(filter);
+            o3.start(now);
+            o3.stop(now + duration + 0.15);
+        }
+
+        filter.connect(env);
+        env.connect(masterGain);
+        if (reverbNode) env.connect(reverbNode);
+
+        o1.start(now);
+        o2.start(now);
+        o1.stop(now + duration + 0.15);
+        o2.stop(now + duration + 0.15);
+    }
+
+    /* ---------- Set di suoni eterei ---------- */
+    const Sound = {
+        click() {
+            ethereal({
+                freq: 1046.50,
+                duration: 0.9,
+                gain: 0.035,
+                attack: 0.02,
+                release: 0.75,
+                detune: 4,
+                cutoff: 5
+            });
+        },
+        play() {
+            ethereal({ freq: 587.33, duration: 2.0, gain: 0.055, attack: 0.18, release: 1.6, detune: 6, sparkle: true });
+            ethereal({ freq: 880.00, duration: 2.4, gain: 0.055, attack: 0.20, release: 2.0, detune: 6, sparkle: true, delay: 0.22 });
+        },
+        pause() {
+            ethereal({ freq: 783.99, duration: 2.0, gain: 0.055, attack: 0.18, release: 1.6, detune: 6 });
+            ethereal({ freq: 523.25, duration: 2.4, gain: 0.055, attack: 0.20, release: 2.0, detune: 6, delay: 0.22 });
+        },
+        finish() {
+            const chord = [880, 1108.73, 1318.51, 1760];
+            for (let rep = 0; rep < 3; rep++) {
+                const base = rep * 1.2;
+                chord.forEach((f, i) => {
+                    ethereal({
+                        freq: f,
+                        duration: 3.6 - rep * 0.2,
+                        gain: 0.045,
+                        attack: 0.35,
+                        release: 2.8,
+                        detune: 7,
+                        sparkle: true,
+                        delay: base + i * 0.09
+                    });
+                });
+            }
+        }
+    };
+
+    /* ======================================================
+       TIMER
+       ====================================================== */
+    const bar         = document.querySelector(".bar");
+    const playBtn     = document.querySelector(".play-btn");
+    const addBtn      = document.querySelector(".add-btn");
+    const subBtn      = document.querySelector(".sub-btn");
+    const muteBtn     = document.querySelector(".mute-btn");
+    const pomoBtn     = document.querySelector(".pomo-btn");
+    const pomoTrack   = document.getElementById("pomoTrack");
+    const minsDisplay = document.querySelector(".mins");
+    const secsDisplay = document.querySelector(".secs");
+
+    const STEP      = 60;
+    const MIN_TOTAL = 60;
+    const MAX_TOTAL = 90 * 60;
+
+    const FINISH_CYCLES = 3;
+    const FINISH_PERIOD = 1.2;
+
+    /* ---------- Sequenza Pomodoro ----------
+       4 blocchi da 25' + 3 pause da 5' = 7 timer totali.
+       Termina dopo l'ultimo blocco da 25' (nessuna pausa finale). */
+    const POMO_SEQUENCE = [25, 5, 25, 5, 25, 5, 25];
+    const POMO_WORK_MIN = 25;
+
+    let timeTotal     = 25 * 60;
+    let timePassed    = 0;
+    let timerInterval = null;
+    let finishTimeout = null;
+    let finished      = false;
+
+    let pomodoroMode  = false;
+    let pomoIndex     = 0;
+    let pomoCompleted = POMO_SEQUENCE.map(() => false);
+
+    /* ---------- Costruzione indicatori ---------- */
+    const pomoIndicators = [];
+    POMO_SEQUENCE.forEach((min) => {
+        const el = document.createElement("div");
+        el.className = "pomo-ind " + (min === POMO_WORK_MIN ? "work" : "break");
+        el.setAttribute("role", "listitem");
+        pomoTrack.appendChild(el);
+        pomoIndicators.push(el);
+    });
+
+    function renderIndicators() {
+        pomoIndicators.forEach((el, i) => {
+            const min   = POMO_SEQUENCE[i];
+            const done  = pomoCompleted[i];
+            const curr  = (i === pomoIndex) && !done;
+
+            el.classList.toggle("completed", done);
+            el.classList.toggle("current", curr);
+
+            const label = (min === POMO_WORK_MIN ? "Focus" : "Pausa") + " " + min + " minuti";
+            const state = done ? "completato" : (curr ? "in corso" : "da fare");
+            el.setAttribute("aria-label", label + " — " + state);
+        });
+    }
+
+    /* ---------- Rendering timer ---------- */
+    function render() {
+        const remaining = Math.max(0, timeTotal - timePassed);
+
+        minsDisplay.textContent = String(Math.floor(remaining / 60)).padStart(2, "0");
+        secsDisplay.textContent = String(remaining % 60).padStart(2, "0");
+
+        bar.style.width = `${(timePassed / timeTotal) * 100}%`;
+
+        if (pomodoroMode) {
+            addBtn.disabled = true;
+            subBtn.disabled = true;
+        } else {
+            addBtn.disabled = timeTotal >= MAX_TOTAL;
+            subBtn.disabled = timeTotal <= MIN_TOTAL;
+        }
+    }
+
+    function tick() {
+        timePassed = Math.min(timePassed + 1, timeTotal);
+        render();
+
+        if (timePassed >= timeTotal) {
+            handleFinish();
+        }
+    }
+
+    function handleFinish() {
+        stopTimer();
+        finished = true;
+
+        // Segna il timer corrente come completato (in modalità pomodoro)
+        if (pomodoroMode) {
+            pomoCompleted[pomoIndex] = true;
+            renderIndicators();
+        }
+
+        Sound.finish();
+
+        bar.classList.remove("finishing");
+        void bar.offsetWidth;
+        bar.classList.add("finishing");
+
+        clearTimeout(finishTimeout);
+        finishTimeout = setTimeout(() => {
+            bar.classList.remove("finishing");
+            finishTimeout = null;
+
+            // In modalità pomodoro passa al timer successivo (auto-avvio)
+            if (pomodoroMode && pomoIndex < POMO_SEQUENCE.length - 1) {
+                pomoIndex++;
+                timeTotal = POMO_SEQUENCE[pomoIndex] * 60;
+                resetProgress();
+                renderIndicators();
+                startTimer();
+            }
+        }, FINISH_PERIOD * FINISH_CYCLES * 1000);
+    }
+
+    /**
+     * Riporta la sessione corrente a zero (barra a sinistra, senza transizione).
+     */
+    function resetProgress() {
+        finished   = false;
+        timePassed = 0;
+
+        bar.classList.remove("finishing");
+        clearTimeout(finishTimeout);
+        finishTimeout = null;
+
+        bar.style.transition = "none";
+        render();
+        void bar.offsetWidth;
+        bar.style.transition = "";
+    }
+
+    /**
+     * Reimposta la sequenza Pomodoro allo stato iniziale.
+     */
+    function resetPomodoroSequence() {
+        pomoIndex     = 0;
+        pomoCompleted = POMO_SEQUENCE.map(() => false);
+        timeTotal     = POMO_SEQUENCE[0] * 60;
+        resetProgress();
+        renderIndicators();
+    }
+
+    function startTimer() {
+        if (timerInterval !== null) return;
+
+        // Se la sequenza pomodoro è completata, ricomincia da capo
+        if (pomodoroMode && pomoCompleted.every(c => c)) {
+            resetPomodoroSequence();
+        }
+
+        const restartingAfterFinish = finished;
+
+        if (restartingAfterFinish) resetProgress();
+
+        timerInterval = setInterval(tick, 1000);
+
+        playBtn.classList.add("is-playing");
+        playBtn.setAttribute("aria-label", "Metti in pausa");
+        document.body.classList.add("playing");
+
+        Sound.play();
+
+        if (!restartingAfterFinish) render();
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+
+        playBtn.classList.remove("is-playing");
+        playBtn.setAttribute("aria-label", "Avvia");
+        document.body.classList.remove("playing");
+    }
+
+    /* ======================================================
+       MODALITÀ POMODORO
+       ====================================================== */
+    function setPomodoroMode(on) {
+        if (on === pomodoroMode) return;
+        pomodoroMode = on;
+
+        document.body.classList.toggle("pomodoro", pomodoroMode);
+        pomoTrack.classList.toggle("visible", pomodoroMode);
+        pomoBtn.setAttribute("aria-pressed", String(pomodoroMode));
+
+        // Ferma qualsiasi timer in corso e annulla transizioni di fine
+        if (timerInterval !== null) {
+            stopTimer();
+            Sound.pause();
+        }
+        clearTimeout(finishTimeout);
+        finishTimeout = null;
+        bar.classList.remove("finishing");
+
+        if (pomodoroMode) {
+            resetPomodoroSequence();
+        } else {
+            // Tornando alla modalità libera, ripristina il default 25:00
+            finished   = false;
+            timePassed = 0;
+            timeTotal  = 25 * 60;
+            render();
+        }
+        renderIndicators();
+    }
+
+    /* ======================================================
+       EVENTI
+       ====================================================== */
+    playBtn.addEventListener("click", () => {
+        if (timerInterval === null) {
+            startTimer();
+        } else {
+            stopTimer();
+            Sound.pause();
+        }
+    });
+
+    addBtn.addEventListener("click", () => {
+        Sound.click();
+        if (finished) resetProgress();
+        timeTotal = Math.min(timeTotal + STEP, MAX_TOTAL);
+        if (timePassed > timeTotal) timePassed = timeTotal;
+        render();
+    });
+
+    subBtn.addEventListener("click", () => {
+        Sound.click();
+        if (finished) resetProgress();
+        timeTotal = Math.max(timeTotal - STEP, MIN_TOTAL);
+        if (timePassed > timeTotal) timePassed = timeTotal;
+        render();
+    });
+
+    muteBtn.addEventListener("click", () => {
+        muted = !muted;
+        document.body.classList.toggle("muted", muted);
+        if (!muted) Sound.click();
+    });
+
+    pomoBtn.addEventListener("click", () => {
+        setPomodoroMode(!pomodoroMode);
+        if (!muted) Sound.click();
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.code !== "Space") return;
+        if (e.target instanceof HTMLButtonElement) return;
+        e.preventDefault();
+        if (timerInterval === null) {
+            startTimer();
+        } else {
+            stopTimer();
+            Sound.pause();
+        }
+    });
+
+    /* ---------- Init ---------- */
+    render();
+    renderIndicators();
+</script>
+</body>
+</html>
