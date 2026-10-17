@@ -53,6 +53,10 @@ const apps = [
       webgameshub = {
             display: "Web Games Hub",
             id: "webgameshub"
+      },
+      pomodoro = {
+            display: "Pomodoro Timer",
+            id: "pomodoro"
       }
       
 ]
