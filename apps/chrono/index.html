@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chrono · Timeline Builder</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+<style>
+  :root { --grid: rgba(148,163,184,.08); }
+  * { -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overscroll-behavior: none; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, var(--grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* Righello e punti asse: NON devono intercettare i click */
+  #rulerCanvas, #dotCanvas { pointer-events: none; }
+
+  .tl-tick { position:absolute; top:0; bottom:0; width:1px;
+    background:linear-gradient(to bottom, rgba(148,163,184,.05), rgba(148,163,184,.30)); }
+  .tl-tick-label { position:absolute; top:6px; left:7px; font-size:11px;
+    color:#94a3b8; white-space:nowrap; font-variant-numeric: tabular-nums; letter-spacing:.02em; }
+
+  .axis-line { position:absolute; left:0; right:0; top:0; height:2px;
+    background:linear-gradient(90deg, rgba(99,102,241,.65), rgba(34,211,238,.65)); }
+  .tl-axis-dot { position:absolute; top:0; display:block; }
+  .tl-axis-dot.point {
+    width:13px; height:13px; margin-left:-6.5px; margin-top:-5.5px; border-radius:999px;
+    background:var(--c); border:2px solid #020617;
+    box-shadow:0 0 0 1px var(--c), 0 0 14px -2px var(--c);
+  }
+  .tl-axis-dot.range {
+    height:8px; margin-top:-3px; border-radius:4px; background:var(--c); opacity:.85;
+    box-shadow:0 0 16px -4px var(--c);
+  }
+
+  .tl-stem { position:absolute; width:1px;
+    background:linear-gradient(to bottom, rgba(148,163,184,.45), rgba(148,163,184,.10));
+    pointer-events:none; }
+
+  .tl-card {
+    position:absolute; height:92px; display:flex; flex-direction:column; justify-content:center;
+    gap:3px; padding:9px 12px 9px 14px; text-align:left; border-radius:14px; overflow:hidden;
+    background:linear-gradient(180deg, rgba(30,41,59,.96), rgba(15,23,42,.99));
+    border:1px solid rgba(148,163,184,.16);
+    border-left:3px solid var(--c);
+    box-shadow:0 12px 30px -20px #000, inset 0 1px 0 rgba(255,255,255,.045);
+    cursor:pointer; transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    will-change:transform; font: inherit; color: inherit;
+  }
+  .tl-card::after {
+    content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 16%, transparent), transparent 62%);
+  }
+  .tl-card:hover { transform:translateY(-2px);
+    border-color:color-mix(in srgb, var(--c) 55%, transparent);
+    box-shadow:0 18px 36px -20px color-mix(in srgb, var(--c) 70%, #000); }
+  .tl-card:active { transform:translateY(0) scale(.995); }
+  .tl-card-head { display:flex; align-items:center; gap:7px; min-width:0; }
+  .tl-emoji { font-size:15px; line-height:1; flex:none; }
+  .tl-title { font-size:13px; font-weight:650; color:#f1f5f9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tl-date { font-size:10.5px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--c); }
+  .tl-desc { font-size:11px; line-height:1.35; color:#94a3b8; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+
+  #drawer { transform: translateY(102%); transition: transform .32s cubic-bezier(.32,.72,0,1); }
+  #drawer.open { transform: translateY(0); }
+  @media (min-width: 640px) {
+    #drawer { transform: translateX(102%); }
+    #drawer.open { transform: translateX(0); }
+  }
+  #overlay { opacity:0; pointer-events:none; transition:opacity .28s ease; }
+  #overlay.show { opacity:1; pointer-events:auto; }
+
+  .fld { width:100%; background:#0f172a; border:1px solid #1e293b; color:#e2e8f0;
+    border-radius:10px; padding:9px 12px; font-size:13.5px; outline:none; transition:border-color .15s, box-shadow .15s; }
+  .fld:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.18); }
+  .lbl { display:block; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#64748b; margin-bottom:5px; }
+  input[type="color"].fld { padding:3px; height:40px; cursor:pointer; }
+  input[type=date].fld::-webkit-calendar-picker-indicator { filter: invert(.65); cursor:pointer; }
+
+  #toast { position:fixed; left:50%; bottom:26px; transform:translate(-50%, 140%);
+    background:#1e293b; color:#e2e8f0; border:1px solid #334155; padding:10px 18px; border-radius:999px;
+    font-size:13px; font-weight:600; z-index:100; transition:transform .3s cubic-bezier(.32,.72,0,1);
+    box-shadow:0 18px 40px -18px #000; white-space:nowrap; max-width:90vw; overflow:hidden; text-overflow:ellipsis; }
+  #toast.show { transform:translate(-50%, 0); }
+
+  .scroll-thin::-webkit-scrollbar { width:8px; height:8px; }
+  .scroll-thin::-webkit-scrollbar-thumb { background:#334155; border-radius:8px; }
+  .scroll-thin::-webkit-scrollbar-track { background:transparent; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     LIGHT MODE
+     ═══════════════════════════════════════════════════════════════ */
+  html                       { color-scheme: dark; }
+  html.light                 { color-scheme: light; --grid: rgba(15,23,42,.07); }
+
+  html.light body,
+  html.light #wrap,
+  html.light #wrap.bg-slate-950      { background:#f1f5f9 !important; color:#0f172a !important; }
+
+  html.light header {
+    background:rgba(255,255,255,.85) !important;
+    border-color:#e2e8f0 !important;
+  }
+  html.light #projectName            { color:#0f172a !important; }
+  html.light #btnProjects            { color:#334155 !important; }
+  html.light #btnProjects:hover      { background:#e2e8f0 !important; color:#0f172a !important; }
+  html.light #btnProjects svg        { color:#94a3b8 !important; }
+
+  html.light #btnCats,
+  html.light #btnExport,
+  html.light #btnImport,
+  html.light #btnTheme               { color:#475569 !important; }
+  html.light #btnCats:hover,
+  html.light #btnExport:hover,
+  html.light #btnImport:hover,
+  html.light #btnTheme:hover         { color:#0f172a !important; background:#e2e8f0 !important; }
+
+  html.light .bg-slate-950\/55       { background:rgba(255,255,255,.75) !important; }
+
+  html.light .tl-tick                { background:linear-gradient(to bottom, rgba(15,23,42,.03), rgba(15,23,42,.15)); }
+  html.light .tl-tick-label          { color:#64748b; }
+  html.light .tl-stem                { background:linear-gradient(to bottom, rgba(15,23,42,.25), rgba(15,23,42,.05)); }
+
+  html.light .tl-axis-dot.point {
+    border-color:#ffffff;
+    box-shadow:0 0 0 1px var(--c), 0 0 12px -2px var(--c);
+  }
+
+  html.light .tl-card {
+    background:linear-gradient(180deg, #ffffff, #f8fafc);
+    border-color:rgba(15,23,42,.10);
+    box-shadow:0 8px 24px -18px rgba(15,23,42,.4), inset 0 1px 0 rgba(255,255,255,.9);
+  }
+  html.light .tl-card:hover {
+    border-color:color-mix(in srgb, var(--c) 45%, transparent);
+    box-shadow:0 14px 28px -18px color-mix(in srgb, var(--c) 55%, rgba(0,0,0,.15));
+  }
+  html.light .tl-card::after {
+    background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 10%, transparent), transparent 62%);
+  }
+  html.light .tl-title               { color:#0f172a !important; }
+  html.light .tl-desc                { color:#475569 !important; }
+
+  html.light #drawer                 { background:#ffffff !important; border-color:#e2e8f0 !important; color:#0f172a; }
+  html.light #drawer > div:first-child { border-color:#e2e8f0 !important; }
+  html.light #drawerTitle            { color:#0f172a !important; }
+  html.light #drawerClose            { color:#64748b !important; }
+  html.light #drawerClose:hover      { background:#f1f5f9 !important; color:#0f172a !important; }
+
+  html.light .fld {
+    background:#ffffff !important;
+    border-color:#cbd5e1 !important;
+    color:#0f172a !important;
+  }
+  html.light .fld:focus              { border-color:#6366f1 !important; }
+  html.light .lbl                    { color:#64748b; }
+  html.light input[type=date].fld::-webkit-calendar-picker-indicator { filter:none; }
+
+  html.light [data-cat],
+  html.light [data-pr]               { background:#f8fafc !important; border-color:#e2e8f0 !important; }
+  html.light [data-cat] input,
+  html.light [data-cat] [data-color] { background:#ffffff !important; border-color:#cbd5e1 !important; color:#0f172a !important; }
+  html.light [data-pr].bg-indigo-500\/10 {
+    background:rgba(99,102,241,.10) !important;
+    border-color:rgba(99,102,241,.35) !important;
+  }
+  html.light [data-del]:hover        { background:rgba(239,68,68,.10) !important; }
+  html.light .text-red-400           { color:#dc2626 !important; }
+
+  html.light #catAdd                 { color:#64748b !important; border-color:#cbd5e1 !important; }
+  html.light #catAdd:hover           { color:#0f172a !important; border-color:#94a3b8 !important; }
+
+  html.light #btnZoomIn,
+  html.light #btnZoomOut,
+  html.light #btnFit {
+    background:rgba(255,255,255,.95) !important;
+    border-color:#e2e8f0 !important;
+    color:#475569 !important;
+  }
+  html.light #btnZoomIn:hover,
+  html.light #btnZoomOut:hover,
+  html.light #btnFit:hover           { color:#0f172a !important; background:#f1f5f9 !important; }
+
+  html.light #overlay                { background:rgba(15,23,42,.35) !important; }
+  html.light #toast {
+    background:#ffffff !important;
+    color:#0f172a !important;
+    border-color:#e2e8f0 !important;
+    box-shadow:0 12px 32px -14px rgba(15,23,42,.3) !important;
+  }
+
+  html.light #emptyState p           { color:#334155 !important; }
+  html.light #emptyState p:last-child{ color:#64748b !important; }
+</style>
+</head>
+<body class="h-full bg-slate-950 text-slate-200 antialiased flex flex-col overflow-hidden">
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header class="shrink-0 h-14 flex items-center gap-2 px-2.5 sm:px-4 border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-xl z-30">
+  <div class="flex items-center gap-2 min-w-0">
+    <div class="w-8 h-8 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 grid place-items-center text-slate-950 font-black text-sm shadow-lg shadow-indigo-500/20">C</div>
+    <button id="btnProjects" class="group flex items-center gap-1.5 min-w-0 px-2 py-1.5 rounded-lg hover:bg-slate-800/70 transition">
+      <span id="projectName" class="truncate text-[13.5px] font-semibold max-w-[110px] sm:max-w-[220px]">Progetto</span>
+      <svg class="w-3.5 h-3.5 shrink-0 text-slate-500 group-hover:text-slate-300 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+  </div>
+
+  <div class="flex-1"></div>
+
+  <button id="btnCats" title="Categorie"
+    class="hidden sm:grid place-items-center w-9 h-9 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+    <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M7 7h.01M20.6 13.4 12.4 21.6a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1 0-2.8l8.2-8.2A2 2 0 0 1 12 2.8h5.2a2 2 0 0 1 2 2V8a2 2 0 0 1-.6 1.4Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button id="btnExport" title="Esporta JSON"
+    class="hidden sm:grid place-items-center w-9 h-9 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+    <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button id="btnImport" title="Importa JSON"
+    class="hidden sm:grid place-items-center w-9 h-9 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+    <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 15V3m0 0-4 4m4-4 4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+
+  <button id="btnTheme" title="Cambia tema"
+    class="grid place-items-center w-9 h-9 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+    <svg id="iconMoon" class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <svg id="iconSun" class="hidden w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <button id="btnAdd"
+    class="flex items-center gap-1.5 h-9 px-3 sm:px-4 rounded-lg bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600
+           text-white text-[13px] font-semibold transition shadow-lg shadow-indigo-500/25 shrink-0">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+    <span class="hidden xs:inline sm:inline">Evento</span>
+  </button>
+</header>
+
+<!-- ══════════════ TIMELINE ══════════════ -->
+<main id="wrap" class="relative flex-1 overflow-hidden select-none bg-slate-950" style="touch-action:none;">
+
+  <div class="absolute inset-x-0 top-0 h-14 overflow-hidden bg-slate-950/55 backdrop-blur-sm z-10">
+    <div id="rulerCanvas" class="absolute top-0 left-0 h-full will-change-transform"></div>
+  </div>
+
+  <div class="absolute inset-x-0 top-14 h-0 z-20">
+    <div class="absolute inset-x-0 top-0 h-0"><div class="axis-line"></div></div>
+    <div id="dotCanvas" class="absolute top-0 left-0 will-change-transform"></div>
+  </div>
+
+  <div id="stage" class="absolute inset-x-0 top-14 bottom-0 overflow-hidden">
+    <div id="canvas" class="absolute top-0 left-0 grid-bg will-change-transform"></div>
+  </div>
+
+  <div class="absolute right-3 bottom-3 z-30 flex flex-col gap-1.5">
+    <button id="btnZoomIn"  class="w-10 h-10 grid place-items-center rounded-xl bg-slate-800/90 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-700 active:scale-95 transition shadow-xl backdrop-blur">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+    </button>
+    <button id="btnZoomOut" class="w-10 h-10 grid place-items-center rounded-xl bg-slate-800/90 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-700 active:scale-95 transition shadow-xl backdrop-blur">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12h14" stroke-linecap="round"/></svg>
+    </button>
+    <button id="btnFit" class="w-10 h-10 grid place-items-center rounded-xl bg-slate-800/90 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-700 active:scale-95 transition shadow-xl backdrop-blur" title="Adatta alla vista">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 9V6a2 2 0 0 1 2-2h3M20 9V6a2 2 0 0 0-2-2h-3M4 15v3a2 2 0 0 0 2 2h3m11-5v3a2 2 0 0 1-2 2h-3" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <div id="emptyState" class="absolute inset-0 z-[5] grid place-items-center pointer-events-none opacity-0 transition-opacity duration-300">
+    <div class="text-center px-6">
+      <div class="text-4xl mb-3">🕰️</div>
+      <p class="text-slate-400 font-semibold text-sm">Nessun evento sulla linea</p>
+      <p class="text-slate-600 text-xs mt-1">Clicca sull'asse o premi "Evento" per iniziare</p>
+    </div>
+  </div>
+</main>
+
+<!-- ══════════════ OVERLAY + DRAWER ══════════════ -->
+<div id="overlay" class="fixed inset-0 bg-black/65 backdrop-blur-[2px] z-40"></div>
+
+<aside id="drawer"
+  class="fixed z-50 inset-x-0 bottom-0 max-h-[90dvh] sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[430px] sm:max-h-none
+         bg-slate-900 border-t sm:border-t-0 sm:border-l border-slate-800 rounded-t-3xl sm:rounded-none
+         flex flex-col shadow-2xl">
+  <div class="shrink-0 flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-800/80">
+    <h2 id="drawerTitle" class="text-[15px] font-bold text-white tracking-tight">Titolo</h2>
+    <button id="drawerClose" class="w-8 h-8 grid place-items-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div id="drawerBody" class="flex-1 overflow-y-auto scroll-thin px-5 py-4 pb-8"></div>
+</aside>
+
+<input type="file" id="fileImport" accept="application/json,.json" class="hidden">
+<div id="toast"></div>
+
+<script>
+/* =========================================================================
+   0. UTILITY
+   ========================================================================= */
+const DAY_MS = 86400000;
+const uid   = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const esc   = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+const MESI = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+
+/* =========================================================================
+   1. MATEMATICA TEMPO → PIXEL
+   ========================================================================= */
+const PAD_LEFT    = 160;
+const PAD_RIGHT   = 600;
+const CARD_MIN_W  = 200;
+const CARD_H      = 92;
+const LANE_GAP    = 16;
+const LANE_STEP   = CARD_H + LANE_GAP;
+const LANES_TOP   = 46;
+const MIN_PX_DAY  = 0.03;
+const MAX_PX_DAY  = 4000;
+const MAX_CONTENT = 4_000_000;
+
+const pxPerMsFrom = pxPerDay => pxPerDay / DAY_MS;
+const timeToX = (ms, origin, pxPerDay) => (ms - origin) * pxPerMsFrom(pxPerDay) + PAD_LEFT;
+const xToTime = (x,  origin, pxPerDay) => origin + (x - PAD_LEFT) / pxPerMsFrom(pxPerDay);
+
+function computeBounds(events) {
+  let min = Infinity, max = -Infinity;
+  for (const e of events) {
+    const s = dayjs(e.start).startOf('day').valueOf();
+    const t = e.end ? dayjs(e.end).endOf('day').valueOf() : s;
+    if (s < min) min = s;
+    if (t > max) max = t;
+  }
+  if (!isFinite(min)) {
+    const now = Date.now();
+    min = now - 180 * DAY_MS;
+    max = now + 180 * DAY_MS;
+  }
+  const span = Math.max(max - min, 20 * DAY_MS);
+  const pad  = span * 0.08;
+  return { minMs: min - pad, maxMs: max + pad };
+}
+
+/* =========================================================================
+   2. ANTI-COLLISIONE (LANE PACKING)
+   ========================================================================= */
+function assignLanes(items, gap = LANE_GAP) {
+  const sorted = items.slice().sort((a, b) => (a.startX - b.startX) || (b.width - a.width));
+  const laneEnd = [];
+  for (const it of sorted) {
+    let lane = 0;
+    while (lane < laneEnd.length && it.startX < laneEnd[lane] + gap) lane++;
+    it.lane = lane;
+    laneEnd[lane] = Math.max(laneEnd[lane] ?? -Infinity, it.startX + it.width);
+  }
+  return laneEnd.length;
+}
+
+function layoutItems(events, originMs, pxPerDay) {
+  const ppm = pxPerMsFrom(pxPerDay);
+  const items = events.map(ev => {
+    const sMs = dayjs(ev.start).startOf('day').valueOf();
+    const hasEnd = !!ev.end;
+    const eMs = hasEnd ? dayjs(ev.end).endOf('day').valueOf() : sMs;
+    const isRange = hasEnd && eMs > sMs;
+
+    const startX = (sMs - originMs) * ppm + PAD_LEFT;
+    const trueW  = isRange ? (eMs - sMs) * ppm : 0;
+    const width  = Math.max(trueW, CARD_MIN_W);
+
+    return { id: ev.id, ev, startX, width, trueW, isRange, sMs, eMs };
+  });
+  assignLanes(items);
+  return items;
+}
+
+/* =========================================================================
+   3. TICKS ADATTIVI
+   ========================================================================= */
+const TICK_STEPS = [
+  { ms: 1000,          unit: 's', n: 1 },
+  { ms: 5000,          unit: 's', n: 5 },
+  { ms: 15000,         unit: 's', n: 15 },
+  { ms: 30000,         unit: 's', n: 30 },
+  { ms: 60000,         unit: 'm', n: 1 },
+  { ms: 300000,        unit: 'm', n: 5 },
+  { ms: 900000,        unit: 'm', n: 15 },
+  { ms: 1800000,       unit: 'm', n: 30 },
+  { ms: 3600000,       unit: 'h', n: 1 },
+  { ms: 10800000,      unit: 'h', n: 3 },
+  { ms: 21600000,      unit: 'h', n: 6 },
+  { ms: 43200000,      unit: 'h', n: 12 },
+  { ms: 86400000,      unit: 'd', n: 1 },
+  { ms: 172800000,     unit: 'd', n: 2 },
+  { ms: 604800000,     unit: 'd', n: 7 },
+  { ms: 1209600000,    unit: 'd', n: 14 },
+  { ms: 2678400000,    unit: 'M', n: 1 },
+  { ms: 8035200000,    unit: 'M', n: 3 },
+  { ms: 16070400000,   unit: 'M', n: 6 },
+  { ms: 31536000000,   unit: 'y', n: 1 },
+  { ms: 63072000000,   unit: 'y', n: 2 },
+  { ms: 157680000000,  unit: 'y', n: 5 },
+  { ms: 315360000000,  unit: 'y', n: 10 },
+  { ms: 788400000000,  unit: 'y', n: 25 },
+  { ms: 1576800000000, unit: 'y', n: 50 },
+  { ms: 3153600000000, unit: 'y', n: 100 },
+];
+
+function fmtTick(ms, step) {
+  const d = dayjs(ms);
+  if (step.unit === 's') return d.format('HH:mm:ss');
+  if (step.unit === 'm' || step.unit === 'h') return d.format('HH:mm');
+  if (step.unit === 'd') return `${d.date()} ${MESI[d.month()]}`;
+  if (step.unit === 'M') return `${MESI[d.month()]} ${d.year()}`;
+  return String(d.year());
+}
+
+function generateTicks(startMs, endMs, pxPerDay) {
+  const needMs = 110 / pxPerMsFrom(pxPerDay);
+  const step = TICK_STEPS.find(s => s.ms >= needMs) || TICK_STEPS[TICK_STEPS.length - 1];
+  const out = [];
+  const MAX_TICKS = 240;
+
+  if (step.unit === 'y' || step.unit === 'M') {
+    let d = dayjs(startMs).startOf(step.unit === 'y' ? 'year' : 'month');
+    if (step.unit === 'y') d = d.year(Math.floor(d.year() / step.n) * step.n);
+    else                   d = d.month(Math.floor(d.month() / step.n) * step.n);
+    while (d.valueOf() < endMs && out.length < MAX_TICKS) {
+      if (d.valueOf() >= startMs - step.ms) out.push({ ms: d.valueOf(), label: fmtTick(d.valueOf(), step) });
+      d = d.add(step.n, step.unit === 'y' ? 'year' : 'month');
+    }
+  } else if (step.unit === 'd') {
+    let d = dayjs(startMs).startOf('day');
+    const days = Math.floor(d.valueOf() / DAY_MS);
+    d = d.subtract(((days % step.n) + step.n) % step.n, 'day');
+    while (d.valueOf() < endMs && out.length < MAX_TICKS) {
+      if (d.valueOf() >= startMs - step.ms) out.push({ ms: d.valueOf(), label: fmtTick(d.valueOf(), step) });
+      d = d.add(step.n, 'day');
+    }
+  } else {
+    let t = Math.floor(startMs / step.ms) * step.ms;
+    while (t < endMs && out.length < MAX_TICKS) {
+      if (t >= startMs - step.ms) out.push({ ms: t, label: fmtTick(t, step) });
+      t += step.ms;
+    }
+  }
+  return out;
+}
+
+/* =========================================================================
+   4. STATO + PERSISTENZA
+   ========================================================================= */
+const LS_KEY = 'chrono.timeline.v1';
+
+const state = {
+  projects: [],
+  currentId: null,
+  view: { pxPerDay: 42, scrollX: 0, scrollY: 0 },
+  bounds: { minMs: 0, maxMs: 1 },
+  contentW: 0,
+  contentH: 0,
+  items: [],
+};
+
+const current = () => state.projects.find(p => p.id === state.currentId) || null;
+const getCat  = id => current()?.categories.find(c => c.id === id) || null;
+const findEv  = id => current()?.events.find(e => e.id === id) || null;
+
+let saveTimer = null;
+function persist() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({
+        projects: state.projects,
+        currentId: state.currentId,
+        view: state.view,
+      }));
+    } catch (e) { console.warn('Salvataggio fallito', e); }
+  }, 220);
+}
+
+function loadPersisted() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!Array.isArray(data.projects) || !data.projects.length) return false;
+    state.projects = data.projects;
+    state.currentId = data.projects.some(p => p.id === data.currentId) ? data.currentId : data.projects[0].id;
+    if (data.view && typeof data.view === 'object') {
+      if (typeof data.view.scrollX === 'number' && isFinite(data.view.scrollX)) state.view.scrollX = data.view.scrollX;
+      if (typeof data.view.scrollY === 'number' && isFinite(data.view.scrollY)) state.view.scrollY = data.view.scrollY;
+      if (typeof data.view.pxPerDay === 'number' && isFinite(data.view.pxPerDay)) {
+        state.view.pxPerDay = clamp(data.view.pxPerDay, MIN_PX_DAY, MAX_PX_DAY);
+      }
+    }
+    return true;
+  } catch { return false; }
+}
+
+const DEFAULT_CATS = () => ([
+  { id: uid(), name: 'Lavoro',    color: '#6366f1', emoji: '💼' },
+  { id: uid(), name: 'Personale', color: '#10b981', emoji: '🏠' },
+  { id: uid(), name: 'Studio',    color: '#f59e0b', emoji: '🎓' },
+  { id: uid(), name: 'Viaggi',    color: '#06b6d4', emoji: '✈️' },
+  { id: uid(), name: 'Salute',    color: '#ef4444', emoji: '🩺' },
+]);
+
+function newProject(name) {
+  return { id: uid(), name, createdAt: Date.now(), updatedAt: Date.now(), events: [], categories: DEFAULT_CATS() };
+}
+
+function seedProject() {
+  const p = newProject('La mia timeline');
+  const [lav, per, stu] = p.categories;
+  const mk = (title, start, end, desc, emoji, color, catId) =>
+    ({ id: uid(), title, start, end: end || '', description: desc, emoji, color, categoryId: catId });
+  p.events = [
+    mk('Diploma di maturità', '2018-07-06', '', 'Esame di stato — 100/100.', '🎓', stu.color, stu.id),
+    mk('Università', '2019-09-20', '2022-07-14', 'Laurea triennale in Informatica.', '📚', stu.color, stu.id),
+    mk('Erasmus a Berlino', '2021-03-01', '2021-08-31', 'Sei mesi tra studio e viaggi.', '✈️', '#06b6d4', null),
+    mk('Primo lavoro', '2022-09-01', '', 'Frontend Developer in una startup.', '💼', lav.color, lav.id),
+    mk('Nuova casa', '2024-04-15', '', 'Trasferimento e arredamento.', '🏠', per.color, per.id),
+  ];
+  return p;
+}
+
+/* =========================================================================
+   5. RENDER
+   ========================================================================= */
+const els = {
+  wrap:        document.getElementById('wrap'),
+  stage:       document.getElementById('stage'),
+  canvas:      document.getElementById('canvas'),
+  rulerCanvas: document.getElementById('rulerCanvas'),
+  dotCanvas:   document.getElementById('dotCanvas'),
+  drawer:      document.getElementById('drawer'),
+  drawerTitle: document.getElementById('drawerTitle'),
+  drawerBody:  document.getElementById('drawerBody'),
+  overlay:     document.getElementById('overlay'),
+  projectName: document.getElementById('projectName'),
+  emptyState:  document.getElementById('emptyState'),
+  toast:       document.getElementById('toast'),
+  fileImport:  document.getElementById('fileImport'),
+};
+
+function applyTransform() {
+  const { scrollX, scrollY } = state.view;
+  const tx = `translate3d(${-scrollX}px,0,0)`;
+  els.rulerCanvas.style.transform = tx;
+  els.dotCanvas.style.transform   = tx;
+  els.canvas.style.transform      = `translate3d(${-scrollX}px,${-scrollY}px,0)`;
+}
+
+function renderRuler() {
+  const { scrollX, pxPerDay } = state.view;
+  const W = els.wrap.clientWidth || 800;
+  const o = state.bounds.minMs;
+
+  const startMs = xToTime(scrollX - 100, o, pxPerDay);
+  const endMs   = xToTime(scrollX + W + 100, o, pxPerDay);
+
+  const frag = document.createDocumentFragment();
+  for (const t of generateTicks(startMs, endMs, pxPerDay)) {
+    const el = document.createElement('div');
+    el.className = 'tl-tick';
+    el.style.left = timeToX(t.ms, o, pxPerDay) + 'px';
+    el.innerHTML = `<span class="tl-tick-label">${esc(t.label)}</span>`;
+    frag.appendChild(el);
+  }
+  els.rulerCanvas.replaceChildren(frag);
+}
+
+function fmtRange(ev) {
+  const s = dayjs(ev.start);
+  if (!ev.end) return s.format('D MMM YYYY');
+  const e = dayjs(ev.end);
+  if (e.isBefore(s, 'day')) return s.format('D MMM YYYY');
+  if (s.year() !== e.year())   return `${MESI[s.month()]} ${s.year()} → ${MESI[e.month()]} ${e.year()}`;
+  if (s.month() !== e.month()) return `${s.date()} ${MESI[s.month()]} → ${e.date()} ${MESI[e.month()]} ${e.year()}`;
+  return `${s.date()}–${e.date()} ${MESI[s.month()]} ${s.year()}`;
+}
+
+function renderEvents(items) {
+  const stemFrag = document.createDocumentFragment();
+  const cardFrag = document.createDocumentFragment();
+  const dotFrag  = document.createDocumentFragment();
+
+  for (const it of items) {
+    const ev    = it.ev;
+    const cat   = getCat(ev.categoryId);
+    const color = ev.color || cat?.color || '#6366f1';
+    const emoji = ev.emoji || cat?.emoji || '📌';
+    const top   = LANES_TOP + it.lane * LANE_STEP;
+
+    const stem = document.createElement('div');
+    stem.className = 'tl-stem';
+    stem.style.left    = it.startX + 'px';
+    stem.style.top     = '0px';
+    stem.style.height  = top + 'px';
+    stem.style.opacity = '0.5';
+    stemFrag.appendChild(stem);
+
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'tl-card';
+    card.style.left  = it.startX + 'px';
+    card.style.top   = top + 'px';
+    card.style.width = it.width + 'px';
+    card.style.setProperty('--c', color);
+    card.dataset.id  = ev.id;
+    card.innerHTML = `
+      <div class="tl-card-head">
+        <span class="tl-emoji">${esc(emoji)}</span>
+        <span class="tl-title">${esc(ev.title || 'Senza titolo')}</span>
+      </div>
+      <div class="tl-date">${esc(fmtRange(ev))}</div>
+      ${ev.description ? `<div class="tl-desc">${esc(ev.description)}</div>` : ''}
+    `;
+    cardFrag.appendChild(card);
+
+    const dot = document.createElement('span');
+    dot.className = 'tl-axis-dot ' + (it.isRange ? 'range' : 'point');
+    dot.style.left = it.startX + 'px';
+    dot.style.setProperty('--c', color);
+    if (it.isRange) dot.style.width = Math.max(it.trueW, 4) + 'px';
+    dotFrag.appendChild(dot);
+  }
+
+  els.canvas.replaceChildren();
+  els.canvas.appendChild(stemFrag);
+  els.canvas.appendChild(cardFrag);
+  els.dotCanvas.replaceChildren(dotFrag);
+}
+
+function fullRender() {
+  const p = current();
+  if (!p) return;
+
+  const W = els.stage.clientWidth  || 800;
+  const H = els.stage.clientHeight || 500;
+  const { pxPerDay } = state.view;
+
+  const b = computeBounds(p.events);
+  state.bounds = b;
+
+  const contentW = Math.max(
+    (b.maxMs - b.minMs) * pxPerMsFrom(pxPerDay) + PAD_LEFT + PAD_RIGHT,
+    W + 1
+  );
+  state.contentW = contentW;
+
+  const items = layoutItems(p.events, b.minMs, pxPerDay);
+  state.items = items;
+  const lanes = items.reduce((mx, it) => Math.max(mx, it.lane + 1), 0);
+  const contentH = Math.max(LANES_TOP + Math.max(lanes, 1) * LANE_STEP + 60, H + 1);
+  state.contentH = contentH;
+
+  els.canvas.style.width  = Math.min(contentW, MAX_CONTENT) + 'px';
+  els.canvas.style.height = contentH + 'px';
+
+  state.view.scrollX = clamp(state.view.scrollX, 0, Math.max(0, contentW - W));
+  state.view.scrollY = clamp(state.view.scrollY, 0, Math.max(0, contentH - H));
+
+  renderRuler();
+  renderEvents(items);
+  applyTransform();
+
+  els.projectName.textContent = p.name;
+  els.emptyState.style.opacity = p.events.length ? '0' : '1';
+  document.title = `${p.name} · Chrono`;
+  persist();
+}
+
+/* =========================================================================
+   6. ZOOM
+   ========================================================================= */
+function setZoom(newPxPerDay, anchorClientX) {
+  const p = current(); if (!p) return;
+  const W = els.stage.clientWidth;
+  const oldPx = state.view.pxPerDay;
+  newPxPerDay = clamp(newPxPerDay, MIN_PX_DAY, MAX_PX_DAY);
+  if (Math.abs(newPxPerDay - oldPx) < 1e-9) return;
+
+  const ax = anchorClientX == null ? W / 2 : anchorClientX;
+  const canvasX = ax + state.view.scrollX;
+  const anchorTime = xToTime(canvasX, state.bounds.minMs, oldPx);
+
+  state.view.pxPerDay = newPxPerDay;
+  const b = state.bounds;
+  const contentW = Math.max(
+    (b.maxMs - b.minMs) * pxPerMsFrom(newPxPerDay) + PAD_LEFT + PAD_RIGHT,
+    W + 1
+  );
+  const newX = timeToX(anchorTime, b.minMs, newPxPerDay);
+  state.view.scrollX = clamp(newX - ax, 0, Math.max(0, contentW - W));
+  fullRender();
+}
+
+function fitToContent() {
+  const p = current(); if (!p) return;
+  const W = els.stage.clientWidth;
+  const b = computeBounds(p.events);
+  const spanDays = Math.max((b.maxMs - b.minMs) / DAY_MS, 1);
+  const targetW = Math.max(W - PAD_LEFT - 80, 400);
+  state.view.pxPerDay = clamp(targetW / spanDays, MIN_PX_DAY, MAX_PX_DAY);
+  state.view.scrollX = 0;
+  state.view.scrollY = 0;
+  fullRender();
+}
+
+/* =========================================================================
+   7. PAN / DRAG / TOUCH
+   ========================================================================= */
+let dragState = null;
+let suppressClick = false;
+
+els.wrap.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  if (e.target.closest('button, input, textarea, select, a')) return;
+  dragState = { x: e.clientX, y: e.clientY, sx: state.view.scrollX, sy: state.view.scrollY };
+  suppressClick = false;
+  els.wrap.style.cursor = 'grabbing';
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!dragState) return;
+  const dx = e.clientX - dragState.x;
+  const dy = e.clientY - dragState.y;
+  if (!suppressClick && Math.hypot(dx, dy) > 3) suppressClick = true;
+  if (!suppressClick) return;
+  state.view.scrollX = clamp(dragState.sx - dx, 0, Math.max(0, state.contentW - els.stage.clientWidth));
+  state.view.scrollY = clamp(dragState.sy - dy, 0, Math.max(0, state.contentH - els.stage.clientHeight));
+  applyTransform();
+  renderRuler();
+});
+
+window.addEventListener('mouseup', () => {
+  if (dragState) { dragState = null; els.wrap.style.cursor = ''; }
+});
+
+els.wrap.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+    state.view.scrollX += (e.shiftKey ? e.deltaY : e.deltaX);
+    fullRender();
+  } else {
+    const rect = els.wrap.getBoundingClientRect();
+    const factor = Math.exp(-e.deltaY * 0.0015);
+    setZoom(state.view.pxPerDay * factor, e.clientX - rect.left);
+  }
+}, { passive: false });
+
+let touchState = null;
+
+els.wrap.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
+    const [a, b] = e.touches;
+    const rect  = els.wrap.getBoundingClientRect();
+    const midX  = (a.clientX + b.clientX) / 2 - rect.left;
+    const anchorTime = xToTime(state.view.scrollX + midX, state.bounds.minMs, state.view.pxPerDay);
+    touchState = {
+      mode: 'pinch',
+      dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+      anchorTime,
+      pxPerDay: state.view.pxPerDay,
+    };
+  } else if (e.touches.length === 1) {
+    touchState = {
+      mode: 'pan',
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      sx: state.view.scrollX,
+      sy: state.view.scrollY,
+    };
+    suppressClick = false;
+  }
+}, { passive: true });
+
+els.wrap.addEventListener('touchmove', (e) => {
+  if (!touchState) return;
+
+  if (touchState.mode === 'pinch' && e.touches.length === 2) {
+    e.preventDefault();
+    const [a, b] = e.touches;
+    const rect  = els.wrap.getBoundingClientRect();
+    const d     = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    const midX  = (a.clientX + b.clientX) / 2 - rect.left;
+    const factor = d / touchState.dist;
+    const newPx = clamp(touchState.pxPerDay * factor, MIN_PX_DAY, MAX_PX_DAY);
+
+    const W = els.stage.clientWidth;
+    const contentW = Math.max(
+      (state.bounds.maxMs - state.bounds.minMs) * pxPerMsFrom(newPx) + PAD_LEFT + PAD_RIGHT,
+      W + 1
+    );
+    state.view.pxPerDay = newPx;
+    const newAnchorX = timeToX(touchState.anchorTime, state.bounds.minMs, newPx);
+    state.view.scrollX = clamp(newAnchorX - midX, 0, Math.max(0, contentW - W));
+    fullRender();
+  } else if (touchState.mode === 'pan' && e.touches.length === 1) {
+    e.preventDefault();
+    const dx = touchState.x - e.touches[0].clientX;
+    const dy = touchState.y - e.touches[0].clientY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) suppressClick = true;
+    state.view.scrollX = clamp(touchState.sx + dx, 0, Math.max(0, state.contentW - els.stage.clientWidth));
+    state.view.scrollY = clamp(touchState.sy + dy, 0, Math.max(0, state.contentH - els.stage.clientHeight));
+    applyTransform();
+    renderRuler();
+  }
+}, { passive: false });
+
+els.wrap.addEventListener('touchend', () => { touchState = null; }, { passive: true });
+
+els.wrap.addEventListener('click', (e) => {
+  if (suppressClick) { suppressClick = false; return; }
+  if (e.target.closest('.tl-card')) return;
+  const rect = els.wrap.getBoundingClientRect();
+  const y = e.clientY - rect.top;
+  if (y > 6 && y < 60) {
+    const canvasX = (e.clientX - rect.left) + state.view.scrollX;
+    const ms = xToTime(canvasX, state.bounds.minMs, state.view.pxPerDay);
+    openEventDrawer(null, dayjs(ms).format('YYYY-MM-DD'));
+  }
+});
+
+els.canvas.addEventListener('click', (e) => {
+  if (suppressClick) return;
+  const card = e.target.closest('.tl-card');
+  if (!card) return;
+  const ev = findEv(card.dataset.id);
+  if (ev) openEventDrawer(ev);
+});
+
+/* =========================================================================
+   8. DRAWER — EVENTO
+   ========================================================================= */
+function openDrawer(title) {
+  els.drawerTitle.textContent = title;
+  els.drawer.classList.add('open');
+  els.overlay.classList.add('show');
+}
+function closeDrawer() {
+  els.drawer.classList.remove('open');
+  els.overlay.classList.remove('show');
+}
+
+function openEventDrawer(ev, defaultStart) {
+  const p = current(); if (!p) return;
+  const isNew = !ev;
+  const e = ev || {
+    id: null, title: '', start: defaultStart || dayjs().format('YYYY-MM-DD'),
+    end: '', description: '', emoji: '', color: '#6366f1', categoryId: '',
+  };
+
+  const catOptions = p.categories.map(c =>
+    `<option value="${c.id}" ${c.id === e.categoryId ? 'selected' : ''}>${esc(c.emoji)} ${esc(c.name)}</option>`
+  ).join('');
+
+  els.drawerBody.innerHTML = `
+    <form id="evForm" class="space-y-3.5">
+      <div>
+        <label class="lbl">Titolo *</label>
+        <input name="title" required value="${esc(e.title)}" class="fld" placeholder="Es. Nuovo lavoro">
+      </div>
+      <div class="grid grid-cols-2 gap-2.5">
+        <div><label class="lbl">Data inizio *</label>
+          <input name="start" type="date" required value="${esc(e.start)}" class="fld"></div>
+        <div><label class="lbl">Data fine</label>
+          <input name="end" type="date" value="${esc(e.end)}" class="fld"></div>
+      </div>
+      <div><label class="lbl">Descrizione</label>
+        <textarea name="description" rows="3" class="fld" placeholder="Breve descrizione…">${esc(e.description)}</textarea></div>
+      <div><label class="lbl">Categoria</label>
+        <select name="categoryId" class="fld">
+          <option value="">— Nessuna —</option>${catOptions}
+        </select></div>
+      <div class="grid grid-cols-2 gap-2.5">
+        <div><label class="lbl">Emoji</label>
+          <input name="emoji" value="${esc(e.emoji)}" class="fld" placeholder="📌" maxlength="4"></div>
+        <div><label class="lbl">Colore</label>
+          <input name="color" type="color" value="${e.color}" class="fld"></div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        ${isNew ? '' : `<button type="button" id="evDelete" class="flex-1 h-10 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 font-semibold text-[13px] hover:bg-red-500/20 transition">Elimina</button>`}
+        <button type="submit" class="flex-1 h-10 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-semibold text-[13px] transition">${isNew ? 'Crea evento' : 'Salva'}</button>
+      </div>
+    </form>`;
+
+  const form = els.drawerBody.querySelector('#evForm');
+  form.categoryId.addEventListener('change', () => {
+    const cat = getCat(form.categoryId.value);
+    if (cat) { form.color.value = cat.color; form.emoji.value = cat.emoji; }
+  });
+
+  form.addEventListener('submit', (evt) => {
+    evt.preventDefault();
+    const data = {
+      title: form.title.value.trim(),
+      start: form.start.value,
+      end: form.end.value || '',
+      description: form.description.value.trim(),
+      emoji: form.emoji.value.trim(),
+      color: form.color.value,
+      categoryId: form.categoryId.value || '',
+    };
+    if (!data.title || !data.start) return;
+    if (data.end && data.end < data.start) [data.start, data.end] = [data.end, data.start];
+
+    if (isNew) p.events.push({ id: uid(), ...data });
+    else Object.assign(findEv(e.id), data);
+
+    closeDrawer(); fullRender(); toast(isNew ? 'Evento creato' : 'Evento aggiornato');
+  });
+
+  if (!isNew) {
+    els.drawerBody.querySelector('#evDelete').addEventListener('click', () => {
+      if (!confirm('Eliminare questo evento?')) return;
+      p.events = p.events.filter(x => x.id !== e.id);
+      closeDrawer(); fullRender(); toast('Evento eliminato');
+    });
+  }
+
+  openDrawer(isNew ? 'Nuovo evento' : 'Modifica evento');
+  setTimeout(() => form.title.focus(), 320);
+}
+
+/* =========================================================================
+   9. DRAWER — CATEGORIE
+   ========================================================================= */
+function openCategoriesDrawer() {
+  const p = current(); if (!p) return;
+
+  const rowHtml = (c) => `
+    <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-800/60 border border-slate-700/60" data-cat="${c.id}">
+      <input type="color" value="${c.color}" class="w-9 h-9 rounded-lg bg-slate-900 border border-slate-700 cursor-pointer" data-color>
+      <input value="${esc(c.emoji)}" class="w-12 h-9 text-center rounded-lg bg-slate-900 border border-slate-700 text-slate-100" maxlength="4" data-emoji>
+      <input value="${esc(c.name)}" class="flex-1 min-w-0 h-9 rounded-lg bg-slate-900 border border-slate-700 px-2 text-slate-100 text-sm" data-name>
+      <button type="button" data-del class="w-9 h-9 grid place-items-center rounded-lg text-red-400 hover:bg-red-500/10">✕</button>
+    </div>`;
+
+  els.drawerBody.innerHTML = `
+    <div class="space-y-2.5" id="catList">${p.categories.map(rowHtml).join('')}</div>
+    <button id="catAdd" type="button" class="mt-3 w-full h-10 rounded-lg border border-dashed border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition text-[13px] font-semibold">+ Nuova categoria</button>
+    <button id="catSave" type="button" class="mt-2 w-full h-10 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-semibold text-[13px] transition">Salva</button>`;
+
+  const listEl = els.drawerBody.querySelector('#catList');
+  const bindDel = (row) => row.querySelector('[data-del]').addEventListener('click', () => {
+    p.categories = p.categories.filter(c => c.id !== row.dataset.cat);
+    row.remove();
+  });
+  listEl.querySelectorAll('[data-cat]').forEach(bindDel);
+
+  els.drawerBody.querySelector('#catAdd').addEventListener('click', () => {
+    const cat = { id: uid(), name: 'Nuova', color: '#6366f1', emoji: '📌' };
+    p.categories.push(cat);
+    const div = document.createElement('div');
+    div.innerHTML = rowHtml(cat);
+    const row = div.firstElementChild;
+    listEl.appendChild(row);
+    bindDel(row);
+  });
+
+  els.drawerBody.querySelector('#catSave').addEventListener('click', () => {
+    listEl.querySelectorAll('[data-cat]').forEach(row => {
+      const cat = p.categories.find(c => c.id === row.dataset.cat);
+      if (!cat) return;
+      cat.color = row.querySelector('[data-color]').value;
+      cat.emoji = row.querySelector('[data-emoji]').value.trim() || '📌';
+      cat.name  = row.querySelector('[data-name]').value.trim() || 'Senza nome';
+    });
+    closeDrawer(); fullRender(); toast('Categorie salvate');
+  });
+
+  openDrawer('Categorie');
+}
+
+/* =========================================================================
+   10. DRAWER — PROGETTI
+   ========================================================================= */
+function openProjectsDrawer() {
+  const list = state.projects.map(pr => `
+    <div class="flex items-center gap-2 p-2.5 rounded-lg ${pr.id === state.currentId ? 'bg-indigo-500/10 border border-indigo-500/40' : 'bg-slate-800/60 border border-slate-700/60'}" data-pr="${pr.id}">
+      <button type="button" data-open class="flex-1 min-w-0 text-left">
+        <div class="text-[13.5px] font-semibold text-slate-100 truncate">${esc(pr.name)}</div>
+        <div class="text-[11px] text-slate-500">${pr.events.length} eventi</div>
+      </button>
+      <button type="button" data-del class="w-8 h-8 grid place-items-center rounded-lg text-red-400 hover:bg-red-500/10">✕</button>
+    </div>`).join('');
+
+  els.drawerBody.innerHTML = `
+    <div class="space-y-2" id="prList">${list}</div>
+    <div class="mt-4 pt-4 border-t border-slate-800">
+      <label class="lbl">Nuovo progetto</label>
+      <div class="flex gap-2">
+        <input id="prName" class="fld" placeholder="Nome progetto">
+        <button id="prAdd" type="button" class="h-[38px] px-3 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-semibold text-[13px] transition whitespace-nowrap">Crea</button>
+      </div>
+    </div>`;
+
+  els.drawerBody.querySelectorAll('[data-pr]').forEach(row => {
+    row.querySelector('[data-open]').addEventListener('click', () => {
+      state.currentId = row.dataset.pr;
+      closeDrawer(); fullRender();
+    });
+    row.querySelector('[data-del]').addEventListener('click', () => {
+      if (state.projects.length === 1) { toast('Serve almeno un progetto'); return; }
+      if (!confirm('Eliminare questo progetto?')) return;
+      state.projects = state.projects.filter(p => p.id !== row.dataset.pr);
+      if (state.currentId === row.dataset.pr) state.currentId = state.projects[0].id;
+      fullRender(); openProjectsDrawer();
+    });
+  });
+
+  els.drawerBody.querySelector('#prAdd').addEventListener('click', () => {
+    const name = els.drawerBody.querySelector('#prName').value.trim();
+    if (!name) return;
+    const p = newProject(name);
+    state.projects.push(p); state.currentId = p.id;
+    fullRender(); closeDrawer(); toast('Progetto creato');
+  });
+
+  openDrawer('Progetti');
+}
+
+/* =========================================================================
+   11. EXPORT / IMPORT
+   ========================================================================= */
+function exportJson() {
+  const p = current(); if (!p) return;
+  const blob = new Blob([JSON.stringify(p, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${(p.name || 'timeline').replace(/[^\w\-]+/g, '_')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Progetto esportato');
+}
+
+function importJson(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data.events)) throw new Error('Formato non valido');
+      const p = {
+        id: uid(),
+        name: String(data.name || 'Progetto importato').slice(0, 80),
+        createdAt: Date.now(), updatedAt: Date.now(),
+        events: data.events.map(e => ({
+          id: e.id || uid(),
+          title: String(e.title || 'Senza titolo'),
+          start: String(e.start || dayjs().format('YYYY-MM-DD')),
+          end: e.end ? String(e.end) : '',
+          description: String(e.description || ''),
+          emoji: String(e.emoji || ''),
+          color: String(e.color || '#6366f1'),
+          categoryId: e.categoryId || '',
+        })),
+        categories: Array.isArray(data.categories) && data.categories.length
+          ? data.categories.map(c => ({
+              id: c.id || uid(),
+              name: String(c.name || 'Categoria'),
+              color: String(c.color || '#6366f1'),
+              emoji: String(c.emoji || '📌'),
+            }))
+          : DEFAULT_CATS(),
+      };
+      state.projects.push(p); state.currentId = p.id;
+      fullRender(); toast('Progetto importato');
+    } catch (err) {
+      toast('File JSON non valido');
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* =========================================================================
+   12. TEMA (light / dark)
+   ========================================================================= */
+const THEME_KEY = 'chrono.theme';
+const mqLight = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+
+function applyTheme(theme) {
+  document.documentElement.classList.toggle('light', theme === 'light');
+  const moon = document.getElementById('iconMoon');
+  const sun  = document.getElementById('iconSun');
+  if (moon && sun) {
+    moon.classList.toggle('hidden', theme === 'light');
+    sun.classList.toggle('hidden',  theme !== 'light');
+  }
+}
+
+function initTheme() {
+  let saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch {}
+  const theme = (saved === 'light' || saved === 'dark')
+    ? saved
+    : (mqLight?.matches ? 'light' : 'dark');
+  applyTheme(theme);
+}
+
+function toggleTheme() {
+  const next = document.documentElement.classList.contains('light') ? 'dark' : 'light';
+  applyTheme(next);
+  try { localStorage.setItem(THEME_KEY, next); } catch {}
+}
+
+mqLight?.addEventListener?.('change', (e) => {
+  let saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch {}
+  if (saved) return;
+  applyTheme(e.matches ? 'light' : 'dark');
+});
+
+/* =========================================================================
+   13. TOAST + INIT
+   ========================================================================= */
+let toastTimer = null;
+function toast(msg) {
+  els.toast.textContent = msg;
+  els.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2200);
+}
+
+function init() {
+  initTheme();
+
+  const restored = loadPersisted();
+  if (!restored) {
+    state.projects = [seedProject()];
+    state.currentId = state.projects[0].id;
+  }
+
+  document.getElementById('btnAdd').addEventListener('click',
+    () => openEventDrawer(null, dayjs().format('YYYY-MM-DD')));
+  document.getElementById('btnCats').addEventListener('click', openCategoriesDrawer);
+  document.getElementById('btnProjects').addEventListener('click', openProjectsDrawer);
+  document.getElementById('btnExport').addEventListener('click', exportJson);
+  document.getElementById('btnImport').addEventListener('click', () => els.fileImport.click());
+  document.getElementById('btnTheme').addEventListener('click', toggleTheme);
+  els.fileImport.addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (f) importJson(f);
+    e.target.value = '';
+  });
+  document.getElementById('btnZoomIn').addEventListener('click', () => setZoom(state.view.pxPerDay * 1.4));
+  document.getElementById('btnZoomOut').addEventListener('click', () => setZoom(state.view.pxPerDay / 1.4));
+  document.getElementById('btnFit').addEventListener('click', fitToContent);
+  document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+  els.overlay.addEventListener('click', closeDrawer);
+  window.addEventListener('resize', () => fullRender());
+
+  requestAnimationFrame(() => {
+    if (restored) fullRender();
+    else          fitToContent();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
