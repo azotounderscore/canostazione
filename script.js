@@ -57,7 +57,11 @@ const apps = [
       pomodoro = {
             display: "Pomodoro Timer",
             id: "pomodoro"
-      }
+      },
+      chrono = {
+            display: "Chrono - Linea del tempo",
+            id: "chrono"
+      },
       
 ]
 
