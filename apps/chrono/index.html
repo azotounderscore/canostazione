@@ -198,6 +198,25 @@
 
   html.light #emptyState p           { color:#334155 !important; }
   html.light #emptyState p:last-child{ color:#64748b !important; }
+  /* ═══════════════════════════════════════════════════════════════
+   FIX LIGHT MODE — Menu Progetti
+   I nomi progetto usano `text-slate-100` (invisibile su bianco)
+   e il divisore usa `border-slate-800` (troppo scuro su chiaro).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Nome progetto + numero eventi */
+html.light [data-pr] .text-slate-100 { color:#0f172a !important; }
+html.light [data-pr] .text-slate-500 { color:#64748b !important; }
+
+/* Divisore sopra "Nuovo progetto" */
+html.light #prList + div             { border-color:#e2e8f0 !important; }
+
+/* Rete di sicurezza: qualsiasi testo slate molto chiaro
+   rimasto nel body del drawer diventa leggibile */
+html.light #drawerBody .text-slate-50,
+html.light #drawerBody .text-slate-100 { color:#0f172a !important; }
+
+  
 </style>
 </head>
 <body class="h-full bg-slate-950 text-slate-200 antialiased flex flex-col overflow-hidden">
