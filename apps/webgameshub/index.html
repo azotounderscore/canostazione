@@ -2,21 +2,189 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>La mia lista di link</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Giochi Browser</title>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 16px; }
-    li { margin: 8px 0; }
-    #stato { color: #888; font-style: italic; }
+    :root {
+      --sfondo: #f6f5f2;
+      --riquadro: #ffffff;
+      --testo: #1e1d1a;
+      --testo-tenue: #726f68;
+      --bordo: #e2dfd8;
+      --bordo-hover: #d3c8b8;
+      --accento: #c07a4a;
+      --accento-chiaro: #f3e9df;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 56px 20px 72px;
+      background:
+        radial-gradient(700px 320px at 50% -120px, rgba(214, 160, 112, 0.22), transparent 70%),
+        var(--sfondo);
+      color: var(--testo);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      margin-bottom: 28px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--bordo);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(26px, 4vw, 32px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    #stato {
+      display: inline-block;
+      margin: 0;
+      padding: 3px 11px;
+      background: var(--accento-chiaro);
+      border-radius: 999px;
+      font-size: 13px;
+      color: #8a6a52;
+    }
+
+    #lista {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .voce {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      overflow: hidden;
+      padding: 14px 18px;
+      background: var(--riquadro);
+      border: 1px solid var(--bordo);
+      border-radius: 12px;
+      color: inherit;
+      text-decoration: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+    }
+
+    .voce::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 3px;
+      background: var(--accento);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .voce::after {
+      content: "↗";
+      font-size: 14px;
+      color: var(--testo-tenue);
+      opacity: 0.5;
+      transition: color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .voce:hover {
+      background: #fffdf9;
+      border-color: var(--bordo-hover);
+      box-shadow: 0 6px 18px rgba(90, 62, 38, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .voce:hover::before {
+      opacity: 1;
+    }
+
+    .voce:hover::after {
+      color: var(--accento);
+      opacity: 1;
+      transform: translate(1px, -1px);
+    }
+
+    .voce:hover .titolo {
+      text-decoration: underline;
+      text-decoration-color: var(--accento);
+      text-underline-offset: 3px;
+    }
+
+    .voce:focus-visible {
+      outline: 2px solid var(--accento);
+      outline-offset: 2px;
+    }
+
+    .titolo {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .url {
+      flex-shrink: 0;
+      max-width: 45%;
+      overflow: hidden;
+      font-size: 12px;
+      color: var(--testo-tenue);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    ::selection {
+      background: #ecd8c4;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .voce,
+      .voce::before,
+      .voce::after {
+        transition: none;
+      }
+
+      .voce:hover {
+        transform: none;
+      }
+    }
+    footer {
+      width: 100%;
+      position: absolute; left: 0;
+      display: flex;justify-content: center;align-items: center;
+      padding: 70px 0 25px;
+      color: var(--testo-tenue);
+      text-decoration: none;
+      background: linear-gradient(180deg, #f6f5f2, rgba(230,230,230,1));
+    }
   </style>
 </head>
 <body>
-  <h1>La mia lista di link</h1>
+  <header>
+    <h1>🎮 Gioca nel browser 🔗</h1>
+    <p id="stato">Caricamento…</p>
+  </header>
 
   <!-- Qui dentro il JS inietterà la lista -->
   <ul id="lista"></ul>
 
-  <!-- Messaggio di stato: caricamento / errore / vuota -->
-  <p id="stato">Caricamento…</p>
+  <footer><a href="https://github.com/azotounderscore/canostazione" target="_blank">Github ↗</a></footer>
 
   <script src="script.js"></script>
 </body>
