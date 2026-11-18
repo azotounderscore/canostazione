@@ -2,6 +2,10 @@ const container = document.querySelector('main');
 
 const apps = [
 
+      {
+            display: "Hide Tag",
+            id: "hidetag",
+      },
       banchi = {
             display: "Banchi",
             id: "banchi",
