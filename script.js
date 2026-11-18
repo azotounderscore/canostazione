@@ -2,10 +2,6 @@ const container = document.querySelector('main');
 
 const apps = [
 
-      {
-            display: "Hide Tag",
-            id: "hidetag",
-      },
       banchi = {
             display: "Banchi",
             id: "banchi",
@@ -65,6 +61,10 @@ const apps = [
       chrono = {
             display: "Chrono - Linea del tempo",
             id: "chrono"
+      },
+      {
+            display: "Hide Tag",
+            id: "hidetag",
       },
       
 ]
